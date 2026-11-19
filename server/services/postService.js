@@ -101,9 +101,9 @@ async function listPosts({ type, tag, search, sort = 'trending', page = 1, limit
   if (search) {
     const q = String(search).trim();
     where.OR = [
-      { title: { contains: q } },
-      { content: { contains: q } },
-      { authorAlias: { contains: q } },
+      { title: { contains: q, mode: 'insensitive' } },
+      { content: { contains: q, mode: 'insensitive' } },
+      { authorAlias: { contains: q, mode: 'insensitive' } },
     ];
   }
 
