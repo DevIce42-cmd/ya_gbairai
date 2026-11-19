@@ -7,6 +7,9 @@ export default function ReaderModal({
   onClose,
   onOpenPost,
   onReact,
+  onVotePoll,
+  onCopyLink,
+  onShareCard,
   onOpenSequel,
   onReport,
   onToast,
@@ -16,15 +19,26 @@ export default function ReaderModal({
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [twistOpen, setTwistOpen] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [commentAlias, setCommentAlias] = useState('');
+  const [replyTo, setReplyTo] = useState(null); // { id, authorAlias }
   const [sendingComment, setSendingComment] = useState(false);
   const bodyRef = useRef(null);
 
+  function stopAudio() {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+  }
+
   useEffect(() => {
+    stopAudio();
     if (!postId) return;
     setLoading(true);
     setTwistOpen(false);
+    setReplyTo(null);
     setProgress(0);
     api
       .getPost(postId)
@@ -37,9 +51,31 @@ export default function ReaderModal({
         onClose();
       })
       .finally(() => setLoading(false));
+
+    return () => stopAudio();
   }, [postId]);
 
   if (!postId) return null;
+
+  function toggleAudio() {
+    if (!('speechSynthesis' in window) || !post) {
+      onToast('Lecture audio non supportée sur ce navigateur.', 'error');
+      return;
+    }
+    if (speaking) {
+      stopAudio();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const text = `${post.title ? post.title + '. ' : ''}${post.content}`;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'fr-FR';
+    utter.rate = 1.02;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    setSpeaking(true);
+    window.speechSynthesis.speak(utter);
+  }
 
   function handleScroll(e) {
     const el = e.currentTarget;
@@ -63,6 +99,31 @@ export default function ReaderModal({
     }
   }
 
+  async function handlePollClick(choice) {
+    const updatedPoll = await onVotePoll(post.id, choice);
+    if (updatedPoll) {
+      setPost((prev) => (prev ? { ...prev, poll: updatedPoll } : prev));
+    }
+  }
+
+  async function handleLikeComment(commentId) {
+    try {
+      const res = await api.toggleCommentLike(commentId);
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              comments: (prev.comments || []).map((c) =>
+                c.id === commentId ? { ...c, likesCount: res.likesCount, likedByMe: res.liked } : c
+              ),
+            }
+          : prev
+      );
+    } catch (err) {
+      onToast(err.message, 'error');
+    }
+  }
+
   async function handleCommentSubmit(e) {
     e.preventDefault();
     if (!commentText.trim()) return;
@@ -71,6 +132,7 @@ export default function ReaderModal({
       const res = await api.addComment(post.id, {
         content: commentText.trim(),
         authorAlias: commentAlias.trim(),
+        parentId: replyTo?.id || null,
       });
       setPost((prev) => ({
         ...prev,
@@ -78,6 +140,7 @@ export default function ReaderModal({
         comments: [...(prev.comments || []), res.comment],
       }));
       setCommentText('');
+      setReplyTo(null);
       onToast('Ton avis est passé propre ! 💬');
       onCommentAdded?.();
     } catch (err) {
@@ -88,9 +151,30 @@ export default function ReaderModal({
   }
 
   const isStory = post?.type === 'STORYTIME';
+  const topComments = (post?.comments || []).filter((c) => !c.parentId);
+  const repliesByParent = new Map();
+  (post?.comments || [])
+    .filter((c) => c.parentId)
+    .forEach((c) => {
+      if (!repliesByParent.has(c.parentId)) repliesByParent.set(c.parentId, []);
+      repliesByParent.get(c.parentId).push(c);
+    });
+
+  const poll = post?.poll;
+  const totalPoll = poll ? Math.max(0, poll.totalVotes || 0) : 0;
+  const pctA = poll && totalPoll > 0 ? Math.round((poll.votesA / totalPoll) * 100) : 0;
+  const pctB = poll && totalPoll > 0 ? 100 - pctA : 0;
 
   return (
-    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          stopAudio();
+          onClose();
+        }
+      }}
+    >
       <div className="modal-card modal-reader">
         <div className="progress-track">
           <div className="progress-fill" style={{ width: `${progress}%` }} />
@@ -114,7 +198,16 @@ export default function ReaderModal({
               <span className="meta-subtle">Ça charge le dossier…</span>
             )}
           </div>
-          <button className="btn-icon" onClick={onClose} aria-label="Fermer">✕</button>
+          <button
+            className="btn-icon"
+            onClick={() => {
+              stopAudio();
+              onClose();
+            }}
+            aria-label="Fermer"
+          >
+            ✕
+          </button>
         </div>
 
         <div className="modal-body" ref={bodyRef} onScroll={handleScroll}>
@@ -122,6 +215,23 @@ export default function ReaderModal({
             <div className="skeleton" />
           ) : (
             <>
+              {/* Action toolbar: Audio TTS + Story Card + Link */}
+              <div className="reader-toolbar">
+                <button
+                  type="button"
+                  className={`btn btn-sm ${speaking ? 'btn-coral' : 'btn-outline'}`}
+                  onClick={toggleAudio}
+                >
+                  {speaking ? '⏹ Arrêter audio' : '🎧 Écouter'}
+                </button>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => onShareCard(post)}>
+                  📸 Carte Story 9:16
+                </button>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => onCopyLink(post.id)}>
+                  🔗 Copier le lien
+                </button>
+              </div>
+
               {isStory && post.seriesId && (
                 <div className="series-bar">
                   <div>
@@ -192,6 +302,35 @@ export default function ReaderModal({
                 </div>
               )}
 
+              {poll && (
+                <div className="poll-box">
+                  <div className="poll-head">
+                    <span>📊 {poll.question}</span>
+                    <span className="meta-subtle">{totalPoll} vote{totalPoll > 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="poll-options">
+                    <button
+                      type="button"
+                      className={`poll-opt ${poll.userChoice === 'A' ? 'selected' : ''}`}
+                      onClick={() => handlePollClick('A')}
+                    >
+                      <span className="poll-bar-fill fill-a" style={{ width: poll.userChoice ? `${pctA}%` : '0%' }} />
+                      <span className="poll-opt-text">{poll.optionA}</span>
+                      {poll.userChoice && <span className="poll-opt-pct">{pctA}%</span>}
+                    </button>
+                    <button
+                      type="button"
+                      className={`poll-opt ${poll.userChoice === 'B' ? 'selected' : ''}`}
+                      onClick={() => handlePollClick('B')}
+                    >
+                      <span className="poll-bar-fill fill-b" style={{ width: poll.userChoice ? `${pctB}%` : '0%' }} />
+                      <span className="poll-opt-text">{poll.optionB}</span>
+                      {poll.userChoice && <span className="poll-opt-pct">{pctB}%</span>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className={`card-foot ${post.type}`}>
                 <div className="react-row" title="Une seule réaction possible à la fois">
                   {REACTIONS.map((r) => {
@@ -214,16 +353,25 @@ export default function ReaderModal({
                 </button>
               </div>
 
+              {/* Threaded Comments */}
               <section className="comments-wrap">
                 <h3 style={{ marginTop: 0 }}>💬 Les avis de la famille ({post.comments?.length || 0})</h3>
 
                 <form onSubmit={handleCommentSubmit} style={{ marginBottom: 16 }}>
+                  {replyTo && (
+                    <div className="reply-banner">
+                      <span>↩ En réponse à <strong>{replyTo.authorAlias}</strong></span>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setReplyTo(null)}>
+                        ✕ Annuler
+                      </button>
+                    </div>
+                  )}
                   <div className="form-group" style={{ marginBottom: 8 }}>
                     <input
                       value={commentAlias}
                       onChange={(e) => setCommentAlias(e.target.value)}
                       maxLength={36}
-                      placeholder="Ton blase (optionnel — on t'en donne un si tu laisses vide)"
+                      placeholder="Ton blase (optionnel — généré si tu laisses vide)"
                     />
                   </div>
                   <div className="form-group" style={{ marginBottom: 8 }}>
@@ -233,26 +381,70 @@ export default function ReaderModal({
                       maxLength={600}
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Dis ce que tu en penses proprement, sans palabre…"
+                      placeholder={replyTo ? `Répondre à ${replyTo.authorAlias}…` : 'Dis ce que tu en penses proprement…'}
                     />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" disabled={sendingComment} className="btn btn-indigo btn-sm">
-                      {sendingComment ? 'Envoi…' : 'Laisser mon avis'}
+                      {sendingComment ? 'Envoi…' : replyTo ? 'Envoyer la réponse' : 'Laisser mon avis'}
                     </button>
                   </div>
                 </form>
 
-                {post.comments?.length ? (
-                  post.comments.map((c) => (
-                    <div key={c.id} className="comment-card">
-                      <div className="comment-meta">
-                        <strong>{c.authorAlias}</strong>
-                        <span>{formatRelativeTime(c.createdAt)}</span>
+                {topComments.length ? (
+                  topComments.map((c) => {
+                    const replies = repliesByParent.get(c.id) || [];
+                    return (
+                      <div key={c.id} className="comment-thread">
+                        <div className="comment-card">
+                          <div className="comment-meta">
+                            <strong>{c.authorAlias}</strong>
+                            <span>{formatRelativeTime(c.createdAt)}</span>
+                          </div>
+                          <p style={{ margin: '0 0 8px', fontSize: '0.92rem', whiteSpace: 'pre-line' }}>{c.content}</p>
+                          <div className="comment-actions">
+                            <button
+                              type="button"
+                              className={`comment-action-btn ${c.likedByMe ? 'liked' : ''}`}
+                              onClick={() => handleLikeComment(c.id)}
+                            >
+                              {c.likedByMe ? '❤️' : '🤍'} {c.likesCount || 0}
+                            </button>
+                            <button
+                              type="button"
+                              className="comment-action-btn"
+                              onClick={() => setReplyTo({ id: c.id, authorAlias: c.authorAlias })}
+                            >
+                              ↩ Répondre
+                            </button>
+                          </div>
+                        </div>
+
+                        {replies.length > 0 && (
+                          <div className="comment-replies">
+                            {replies.map((rep) => (
+                              <div key={rep.id} className="comment-card reply-card">
+                                <div className="comment-meta">
+                                  <strong>{rep.authorAlias}</strong>
+                                  <span>{formatRelativeTime(rep.createdAt)}</span>
+                                </div>
+                                <p style={{ margin: '0 0 8px', fontSize: '0.9rem', whiteSpace: 'pre-line' }}>{rep.content}</p>
+                                <div className="comment-actions">
+                                  <button
+                                    type="button"
+                                    className={`comment-action-btn ${rep.likedByMe ? 'liked' : ''}`}
+                                    onClick={() => handleLikeComment(rep.id)}
+                                  >
+                                    {rep.likedByMe ? '❤️' : '🤍'} {rep.likesCount || 0}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.92rem', whiteSpace: 'pre-line' }}>{c.content}</p>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="meta-subtle">Personne n&apos;a encore parlé ici. Sois le premier à donner ton avis !</p>
                 )}

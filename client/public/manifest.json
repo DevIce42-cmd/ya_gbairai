@@ -1,0 +1,18 @@
+{
+  "name": "Y'A GBAIRAI ! — Confessions & Storytimes",
+  "short_name": "Y'A GBAIRAI !",
+  "description": "Confessions anonymes drôles et Storytimes à épisodes. 100% en scred, zéro djê !",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0912",
+  "theme_color": "#0B0912",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/og-image.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

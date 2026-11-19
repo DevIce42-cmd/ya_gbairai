@@ -95,6 +95,18 @@ function validateCreatePost(body) {
   const authorAlias = sanitizeText(body?.authorAlias);
   const tags = parseTags(body?.tags);
 
+  // Optional quick poll ("Qui a tort ?")
+  const pollEnabled = Boolean(body?.pollEnabled);
+  const pollQuestion = pollEnabled ? sanitizeText(body?.pollQuestion || 'Verdict de la famille ?') : '';
+  const pollOptionA = pollEnabled ? sanitizeText(body?.pollOptionA || 'Tu gères 👏') : '';
+  const pollOptionB = pollEnabled ? sanitizeText(body?.pollOptionB || 'Tu as gâté 😅') : '';
+
+  if (pollEnabled) {
+    if (pollQuestion.length > 100 || pollOptionA.length < 1 || pollOptionA.length > 40 || pollOptionB.length < 1 || pollOptionB.length > 40) {
+      throw new AppError('Les options du sondage doivent contenir 1 à 40 caractères.', 400, 'VALIDATION_ERROR');
+    }
+  }
+
   if (type === 'STORYTIME') {
     if (title.length < 5 || title.length > 120) {
       throw new AppError('Un Storytime doit avoir un titre entre 5 et 120 caractères.', 400, 'VALIDATION_ERROR');
@@ -126,6 +138,9 @@ function validateCreatePost(body) {
     title: title || null,
     content,
     plotTwist: plotTwist || null,
+    pollQuestion: pollEnabled ? pollQuestion : null,
+    pollOptionA: pollEnabled ? pollOptionA : null,
+    pollOptionB: pollEnabled ? pollOptionB : null,
     authorAlias: authorAlias || null,
     tags,
     flagged,
@@ -156,6 +171,7 @@ function validateAddPart(body) {
 function validateComment(body) {
   const content = sanitizeText(body?.content);
   const authorAlias = sanitizeText(body?.authorAlias);
+  const parentId = body?.parentId ? sanitizeText(body.parentId) : null;
 
   if (content.length < 2 || content.length > 600) {
     throw new AppError('Le commentaire doit contenir entre 2 et 600 caractères.', 400, 'VALIDATION_ERROR');
@@ -165,7 +181,15 @@ function validateComment(body) {
   }
 
   const { flagged } = inspectSafety(content);
-  return { content, authorAlias: authorAlias || null, flagged };
+  return { content, authorAlias: authorAlias || null, parentId, flagged };
+}
+
+function validatePollVote(body) {
+  const choice = String(body?.choice || '').toUpperCase();
+  if (choice !== 'A' && choice !== 'B') {
+    throw new AppError('Choix de vote invalide ("A" ou "B").', 400, 'VALIDATION_ERROR');
+  }
+  return { choice };
 }
 
 function validateReaction(body) {
@@ -195,6 +219,7 @@ module.exports = {
   validateCreatePost,
   validateAddPart,
   validateComment,
+  validatePollVote,
   validateReaction,
   validateReport,
 };

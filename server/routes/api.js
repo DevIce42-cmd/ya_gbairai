@@ -26,14 +26,17 @@ router.get('/auth/me', authController.me);
 
 // Posts & Storytime Series
 router.get('/posts', postController.listPosts);
+router.get('/posts/random', postController.getRandomPost);
 router.get('/posts/:id', postController.getPost);
 router.post('/posts', writeLimiter, postController.createPost);
 router.delete('/posts/:id', postController.deletePost);
 router.post('/series/:seriesId/parts', writeLimiter, postController.addPart);
 
-// Engagement
+// Engagement (Reactions, Polls, Threaded Comments, Comment Likes, Reports)
 router.post('/posts/:id/reactions', reactLimiter, postController.toggleReaction);
+router.post('/posts/:id/poll-vote', reactLimiter, postController.votePoll);
 router.post('/posts/:id/comments', writeLimiter, postController.addComment);
+router.post('/comments/:id/like', reactLimiter, postController.toggleCommentLike);
 router.post('/posts/:id/report', writeLimiter, postController.reportPost);
 
 // Admin-Only Dashboard (Traffic, Users & Moderation)

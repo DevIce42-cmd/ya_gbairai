@@ -7,11 +7,20 @@ const {
 } = require('../utils/helpers');
 const { AppError } = require('../middlewares/errorHandler');
 
-function formatPost(post, reactionMap, actor) {
+function formatPost(post, reactionMap, pollMap, actor) {
   const summary = reactionMap?.get(post.id) || {
     counts: { LAUGH: 0, SKULL: 0, MIND_BLOWN: 0, FIRE: 0 },
     userReactions: [],
   };
+
+  const pollSummary = post.pollOptionA && post.pollOptionB
+    ? {
+        question: post.pollQuestion || 'Verdict de la famille ?',
+        optionA: post.pollOptionA,
+        optionB: post.pollOptionB,
+        ...(pollMap?.get(post.id) || { votesA: 0, votesB: 0, totalVotes: 0, userChoice: null }),
+      }
+    : null;
 
   const canManage = Boolean(
     actor?.isAdmin ||
@@ -25,6 +34,7 @@ function formatPost(post, reactionMap, actor) {
     title: post.title,
     content: post.content,
     plotTwist: post.plotTwist,
+    poll: pollSummary,
     authorAlias: post.authorAlias,
     seriesId: post.seriesId,
     partNumber: post.partNumber,
@@ -82,6 +92,42 @@ async function buildReactionMap(postIds, actorKey) {
   return map;
 }
 
+async function buildPollMap(postIds, actorKey) {
+  const map = new Map();
+  if (!postIds.length) return map;
+
+  for (const id of postIds) {
+    map.set(id, { votesA: 0, votesB: 0, totalVotes: 0, userChoice: null });
+  }
+
+  const grouped = await prisma.pollVote.groupBy({
+    by: ['postId', 'choice'],
+    where: { postId: { in: postIds } },
+    _count: { _all: true },
+  });
+
+  for (const row of grouped) {
+    const entry = map.get(row.postId);
+    if (!entry) continue;
+    if (row.choice === 'A') entry.votesA = row._count._all;
+    if (row.choice === 'B') entry.votesB = row._count._all;
+    entry.totalVotes = entry.votesA + entry.votesB;
+  }
+
+  if (actorKey) {
+    const mine = await prisma.pollVote.findMany({
+      where: { postId: { in: postIds }, actorKey },
+      select: { postId: true, choice: true },
+    });
+    for (const v of mine) {
+      const entry = map.get(v.postId);
+      if (entry) entry.userChoice = v.choice;
+    }
+  }
+
+  return map;
+}
+
 async function listPosts({ type, tag, search, sort = 'trending', page = 1, limit = 12 }, actor) {
   const safeLimit = Math.min(Math.max(Number(limit) || 12, 1), 36);
   const safePage = Math.max(Number(page) || 1, 1);
@@ -117,7 +163,6 @@ async function listPosts({ type, tag, search, sort = 'trending', page = 1, limit
 
   let posts;
   if (sort === 'random') {
-    // Fetch matching ids and shuffle for true random feed
     const allIds = await prisma.post.findMany({ where, select: { id: true } });
     for (let i = allIds.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -145,13 +190,14 @@ async function listPosts({ type, tag, search, sort = 'trending', page = 1, limit
     });
   }
 
-  const reactionMap = await buildReactionMap(
-    posts.map((p) => p.id),
-    actor?.actorKey
-  );
+  const postIds = posts.map((p) => p.id);
+  const [reactionMap, pollMap] = await Promise.all([
+    buildReactionMap(postIds, actor?.actorKey),
+    buildPollMap(postIds, actor?.actorKey),
+  ]);
 
   return {
-    items: posts.map((p) => formatPost(p, reactionMap, actor)),
+    items: posts.map((p) => formatPost(p, reactionMap, pollMap, actor)),
     pagination: {
       page: safePage,
       limit: safeLimit,
@@ -159,6 +205,32 @@ async function listPosts({ type, tag, search, sort = 'trending', page = 1, limit
       hasMore: sort !== 'random' && skip + posts.length < total,
     },
   };
+}
+
+async function getRandomPost({ type, excludeId }, actor) {
+  const where = { status: 'PUBLISHED' };
+  if (type === 'CONFESSION' || type === 'STORYTIME') where.type = type;
+  if (excludeId) where.id = { not: excludeId };
+
+  const ids = await prisma.post.findMany({ where, select: { id: true } });
+  if (!ids.length) {
+    throw new AppError('Aucun dossier disponible pour la roulette pour le moment !', 404, 'EMPTY_FEED');
+  }
+
+  const picked = ids[Math.floor(Math.random() * ids.length)];
+  const post = await prisma.post.findUnique({
+    where: { id: picked.id },
+    include: {
+      tags: { include: { tag: true } },
+      series: { select: { id: true, title: true, _count: { select: { posts: true } } } },
+    },
+  });
+
+  const [reactionMap, pollMap] = await Promise.all([
+    buildReactionMap([post.id], actor?.actorKey),
+    buildPollMap([post.id], actor?.actorKey),
+  ]);
+  return formatPost(post, reactionMap, pollMap, actor);
 }
 
 async function getPostById(id, actor, { countView = true } = {}) {
@@ -184,7 +256,7 @@ async function getPostById(id, actor, { countView = true } = {}) {
       },
       comments: {
         where: { status: 'PUBLISHED' },
-        orderBy: { createdAt: 'asc' },
+        orderBy: [{ likesCount: 'desc' }, { createdAt: 'asc' }],
       },
     },
   });
@@ -201,11 +273,28 @@ async function getPostById(id, actor, { countView = true } = {}) {
     post.viewsCount += 1;
   }
 
-  const reactionMap = await buildReactionMap([post.id], actor?.actorKey);
+  const commentIds = post.comments.map((c) => c.id);
+  const [reactionMap, pollMap, myCommentLikes] = await Promise.all([
+    buildReactionMap([post.id], actor?.actorKey),
+    buildPollMap([post.id], actor?.actorKey),
+    actor?.actorKey && commentIds.length
+      ? prisma.commentLike.findMany({
+          where: { commentId: { in: commentIds }, actorKey: actor.actorKey },
+          select: { commentId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const likedSet = new Set(myCommentLikes.map((l) => l.commentId));
+  const commentsWithLike = post.comments.map((c) => ({
+    ...c,
+    likedByMe: likedSet.has(c.id),
+  }));
+
   return {
-    ...formatPost(post, reactionMap, actor),
+    ...formatPost(post, reactionMap, pollMap, actor),
     seriesParts: post.series?.posts || [],
-    comments: post.comments,
+    comments: commentsWithLike,
   };
 }
 
@@ -217,7 +306,6 @@ async function createPost(data, actor) {
   const hotScore = computeHotScore({ reactionsCount: 0, commentsCount: 0, createdAt: now });
   const status = data.flagged ? 'FLAGGED' : 'PUBLISHED';
 
-  // Ensure tags exist
   const tagConnect = [];
   for (const t of data.tags || []) {
     const tagRecord = await prisma.tag.upsert({
@@ -228,7 +316,6 @@ async function createPost(data, actor) {
     tagConnect.push({ tagId: tagRecord.id });
   }
 
-  // If STORYTIME, automatically create a StorySeries so the author can add Partie 2, Partie 3...
   let seriesId = null;
   let partNumber = null;
   if (data.type === 'STORYTIME') {
@@ -248,6 +335,9 @@ async function createPost(data, actor) {
       title: data.title,
       content: data.content,
       plotTwist: data.plotTwist,
+      pollQuestion: data.pollQuestion,
+      pollOptionA: data.pollOptionA,
+      pollOptionB: data.pollOptionB,
       authorAlias,
       authorTokenHash,
       userId: actor?.user?.id || null,
@@ -275,9 +365,13 @@ async function createPost(data, actor) {
     });
   }
 
-  const reactionMap = await buildReactionMap([created.id], actor?.actorKey);
+  const [reactionMap, pollMap] = await Promise.all([
+    buildReactionMap([created.id], actor?.actorKey),
+    buildPollMap([created.id], actor?.actorKey),
+  ]);
+
   return {
-    post: formatPost(created, reactionMap, actor),
+    post: formatPost(created, reactionMap, pollMap, actor),
     flaggedForReview: data.flagged,
   };
 }
@@ -297,19 +391,20 @@ async function addPartToSeries(seriesId, data, actor) {
     throw new AppError('Série Storytime introuvable.', 404, 'SERIES_NOT_FOUND');
   }
 
+  const firstPart = series.posts[0];
   const isOwner =
     actor?.isAdmin ||
+    (actor?.user && firstPart.userId && actor.user.id === firstPart.userId) ||
     (actor?.guestId && hashToken(actor.guestId) === series.authorTokenHash);
 
   if (!isOwner) {
     throw new AppError(
-      'Seul l’auteur original (depuis le même navigateur) peut ajouter une suite à ce Storytime.',
+      'Seul l’auteur original peut ajouter un épisode à ce Storytime.',
       403,
       'FORBIDDEN'
     );
   }
 
-  const firstPart = series.posts[0];
   const nextPartNumber = Math.max(...series.posts.map((p) => p.partNumber || 1)) + 1;
   const title = data.title || `${series.title} — Partie ${nextPartNumber}`;
   const readingTimeSec = estimateReadingTimeSec(`${title} ${data.content} ${data.plotTwist || ''}`);
@@ -323,6 +418,7 @@ async function addPartToSeries(seriesId, data, actor) {
       plotTwist: data.plotTwist,
       authorAlias: firstPart.authorAlias,
       authorTokenHash: firstPart.authorTokenHash,
+      userId: firstPart.userId || actor?.user?.id || null,
       seriesId: series.id,
       partNumber: nextPartNumber,
       readingTimeSec,
@@ -338,21 +434,21 @@ async function addPartToSeries(seriesId, data, actor) {
     },
   });
 
-  const reactionMap = await buildReactionMap([created.id], actor?.actorKey);
-  return formatPost(created, reactionMap, actor);
+  const [reactionMap, pollMap] = await Promise.all([
+    buildReactionMap([created.id], actor?.actorKey),
+    buildPollMap([created.id], actor?.actorKey),
+  ]);
+  return formatPost(created, reactionMap, pollMap, actor);
 }
 
 async function toggleReaction(postId, type, actor) {
   const post = await prisma.post.findFirst({ where: { id: postId, status: 'PUBLISHED' } });
   if (!post) throw new AppError('Publication introuvable.', 404, 'POST_NOT_FOUND');
 
-  // Exclusive single reaction per user per post:
-  // clicking the same emoji removes it; clicking another replaces the previous one.
   const active = await prisma.$transaction(async (tx) => {
     const existingAll = await tx.reaction.findMany({
       where: { postId, actorKey: actor.actorKey },
     });
-
     const hadSame = existingAll.some((r) => r.type === type);
 
     if (existingAll.length > 0) {
@@ -361,9 +457,7 @@ async function toggleReaction(postId, type, actor) {
       });
     }
 
-    if (hadSame) {
-      return false;
-    }
+    if (hadSame) return false;
 
     await tx.reaction.create({
       data: { postId, actorKey: actor.actorKey, type },
@@ -395,6 +489,30 @@ async function toggleReaction(postId, type, actor) {
   };
 }
 
+async function votePoll(postId, choice, actor) {
+  const post = await prisma.post.findFirst({ where: { id: postId, status: 'PUBLISHED' } });
+  if (!post || !post.pollOptionA || !post.pollOptionB) {
+    throw new AppError('Aucun sondage actif sur cette publication.', 404, 'POLL_NOT_FOUND');
+  }
+
+  await prisma.pollVote.upsert({
+    where: {
+      postId_actorKey: { postId, actorKey: actor.actorKey },
+    },
+    update: { choice },
+    create: { postId, actorKey: actor.actorKey, choice },
+  });
+
+  const pollMap = await buildPollMap([postId], actor.actorKey);
+  const counts = pollMap.get(postId);
+  return {
+    question: post.pollQuestion || 'Verdict de la famille ?',
+    optionA: post.pollOptionA,
+    optionB: post.pollOptionB,
+    ...counts,
+  };
+}
+
 async function addComment(postId, data, actor) {
   const post = await prisma.post.findFirst({ where: { id: postId, status: 'PUBLISHED' } });
   if (!post) throw new AppError('Publication introuvable.', 404, 'POST_NOT_FOUND');
@@ -407,9 +525,19 @@ async function addComment(postId, data, actor) {
     );
   }
 
+  if (data.parentId) {
+    const parent = await prisma.comment.findFirst({
+      where: { id: data.parentId, postId, status: 'PUBLISHED' },
+    });
+    if (!parent) {
+      throw new AppError('Commentaire parent introuvable.', 404, 'PARENT_NOT_FOUND');
+    }
+  }
+
   const comment = await prisma.comment.create({
     data: {
       postId,
+      parentId: data.parentId || null,
       userId: actor?.user?.id || null,
       authorAlias: data.authorAlias || generateFunnyAlias(),
       content: data.content,
@@ -430,7 +558,37 @@ async function addComment(postId, data, actor) {
     data: { commentsCount, hotScore },
   });
 
-  return { comment, commentsCount };
+  return {
+    comment: { ...comment, likedByMe: false },
+    commentsCount,
+  };
+}
+
+async function toggleCommentLike(commentId, actor) {
+  const comment = await prisma.comment.findFirst({ where: { id: commentId, status: 'PUBLISHED' } });
+  if (!comment) throw new AppError('Commentaire introuvable.', 404, 'COMMENT_NOT_FOUND');
+
+  const existing = await prisma.commentLike.findUnique({
+    where: {
+      commentId_actorKey: { commentId, actorKey: actor.actorKey },
+    },
+  });
+
+  let liked;
+  if (existing) {
+    await prisma.commentLike.delete({ where: { id: existing.id } });
+    liked = false;
+  } else {
+    await prisma.commentLike.create({
+      data: { commentId, actorKey: actor.actorKey },
+    });
+    liked = true;
+  }
+
+  const likesCount = await prisma.commentLike.count({ where: { commentId } });
+  await prisma.comment.update({ where: { id: commentId }, data: { likesCount } });
+
+  return { commentId, liked, likesCount };
 }
 
 async function reportPost(postId, { reason, details }, actor) {
@@ -453,6 +611,7 @@ async function deletePost(postId, actor) {
 
   const canDelete =
     actor?.isAdmin ||
+    (actor?.user && post.userId && actor.user.id === post.userId) ||
     (actor?.guestId && post.authorTokenHash && hashToken(actor.guestId) === post.authorTokenHash);
 
   if (!canDelete) {
@@ -464,7 +623,9 @@ async function deletePost(postId, actor) {
 }
 
 async function getMeta() {
-  const [confessionsCount, storiesCount, sums, popularTags] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000);
+
+  const [confessionsCount, storiesCount, sums, popularTags, weeklyTop] = await Promise.all([
     prisma.post.count({ where: { type: 'CONFESSION', status: 'PUBLISHED' } }),
     prisma.post.count({ where: { type: 'STORYTIME', status: 'PUBLISHED' } }),
     prisma.post.aggregate({
@@ -476,6 +637,20 @@ async function getMeta() {
       orderBy: { posts: { _count: 'desc' } },
       take: 12,
     }),
+    prisma.post.findFirst({
+      where: { status: 'PUBLISHED', createdAt: { gte: sevenDaysAgo } },
+      orderBy: [{ reactionsCount: 'desc' }, { commentsCount: 'desc' }, { viewsCount: 'desc' }],
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        content: true,
+        authorAlias: true,
+        reactionsCount: true,
+        commentsCount: true,
+        viewsCount: true,
+      },
+    }),
   ]);
 
   return {
@@ -486,22 +661,28 @@ async function getMeta() {
       comments: sums._sum.commentsCount || 0,
       views: sums._sum.viewsCount || 0,
     },
-    popularTags: popularTags.map((t) => ({
-      name: t.name,
-      slug: t.slug,
-      count: t._count.posts,
-    })),
+    popularTags: popularTags
+      .filter((t) => t._count.posts > 0)
+      .map((t) => ({
+        name: t.name,
+        slug: t.slug,
+        count: t._count.posts,
+      })),
+    weeklyTopPost: weeklyTop || null,
     suggestedAlias: generateFunnyAlias(),
   };
 }
 
 module.exports = {
   listPosts,
+  getRandomPost,
   getPostById,
   createPost,
   addPartToSeries,
   toggleReaction,
+  votePoll,
   addComment,
+  toggleCommentLike,
   reportPost,
   deletePost,
   getMeta,

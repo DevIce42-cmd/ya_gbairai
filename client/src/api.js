@@ -70,13 +70,23 @@ export const api = {
     return request(`/posts?${qs.toString()}`).then((r) => r.data);
   },
   getPost: (id) => request(`/posts/${encodeURIComponent(id)}`).then((r) => r.data),
+  getRandomPost: (type = '', excludeId = '') => {
+    const qs = new URLSearchParams();
+    if (type) qs.set('type', type);
+    if (excludeId) qs.set('excludeId', excludeId);
+    return request(`/posts/random?${qs.toString()}`).then((r) => r.data);
+  },
   createPost: (data) => request('/posts', { method: 'POST', body: data }),
   addPart: (seriesId, data) =>
     request(`/series/${encodeURIComponent(seriesId)}/parts`, { method: 'POST', body: data }).then((r) => r.data),
   toggleReaction: (id, type) =>
     request(`/posts/${encodeURIComponent(id)}/reactions`, { method: 'POST', body: { type } }).then((r) => r.data),
+  votePoll: (id, choice) =>
+    request(`/posts/${encodeURIComponent(id)}/poll-vote`, { method: 'POST', body: { choice } }).then((r) => r.data),
   addComment: (id, data) =>
     request(`/posts/${encodeURIComponent(id)}/comments`, { method: 'POST', body: data }).then((r) => r.data),
+  toggleCommentLike: (commentId) =>
+    request(`/comments/${encodeURIComponent(commentId)}/like`, { method: 'POST' }).then((r) => r.data),
   reportPost: (id, data) =>
     request(`/posts/${encodeURIComponent(id)}/report`, { method: 'POST', body: data }).then((r) => r.data),
   deletePost: (id) => request(`/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }).then((r) => r.data),

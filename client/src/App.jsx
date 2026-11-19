@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { api } from './api';
+import { generateAndShareStoryCard } from './utils/storyCardGenerator';
 import PostCard from './components/PostCard';
 import ComposerModal from './components/ComposerModal';
 import ReaderModal from './components/ReaderModal';
@@ -8,19 +9,40 @@ import ReportModal from './components/ReportModal';
 import AdminPanel from './components/AdminPanel';
 import IntroOverlay from './components/IntroOverlay';
 import AuthModal from './components/AuthModal';
+import RouletteModal from './components/RouletteModal';
 
 const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
+const SAVED_POSTS_KEY = 'ya_gbairai_saved_posts';
+
+function getInitialPostFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('post') || null;
+}
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SEEN_KEY));
+  const initialSharedPost = getInitialPostFromUrl();
+  const [showIntro, setShowIntro] = useState(
+    () => !initialSharedPost && !sessionStorage.getItem(INTRO_SEEN_KEY)
+  );
   const [theme, setTheme] = useState(() => localStorage.getItem('ya_gbairai_theme') || 'dark');
   const [user, setUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [tab, setTab] = useState('ALL');
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  const [tab, setTab] = useState('ALL'); // ALL | CONFESSION | STORYTIME | SAVED | ADMIN
   const [sort, setSort] = useState('trending');
   const [activeTag, setActiveTag] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const [savedIds, setSavedIds] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(SAVED_POSTS_KEY) || '[]'));
+    } catch {
+      return new Set();
+    }
+  });
 
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
@@ -34,12 +56,13 @@ export default function App() {
   const [meta, setMeta] = useState({
     stats: { confessions: 0, stories: 0, reactions: 0, comments: 0, views: 0 },
     popularTags: [],
+    weeklyTopPost: null,
     suggestedTags: ['#Gbairai', '#HonteDeBabi', '#Karma', '#PlotTwist', '#Goumin', '#Taff'],
     reportReasons: [],
   });
 
   const [composerState, setComposerState] = useState({ open: false, type: 'CONFESSION', sequelSeries: null });
-  const [readerPostId, setReaderPostId] = useState(null);
+  const [readerPostId, setReaderPostId] = useState(initialSharedPost);
   const [reportPostId, setReportPostId] = useState(null);
   const [toasts, setToasts] = useState([]);
 
@@ -55,6 +78,84 @@ export default function App() {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3200);
   }, []);
+
+  // PWA beforeinstallprompt listener
+  useEffect(() => {
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+  }, []);
+
+  async function handleInstallApp() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      showToast("Y'A GBAIRAI ! installé sur ton écran d'accueil 📲🔥");
+    }
+    setInstallPrompt(null);
+  }
+
+  // Open / close reader + keep ?post=ID URL clean
+  const openPost = useCallback((id) => {
+    setReaderPostId(id);
+    if (id) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('post', id);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
+
+  const closePost = useCallback(() => {
+    setReaderPostId(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('post')) {
+      url.searchParams.delete('post');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
+
+  function toggleSave(postId) {
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+        showToast('Retiré de tes favoris');
+      } else {
+        next.add(postId);
+        showToast('Gardé dans tes favoris ⭐');
+      }
+      localStorage.setItem(SAVED_POSTS_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  async function handleCopyLink(postId) {
+    const link = `${window.location.origin}/?post=${encodeURIComponent(postId)}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast('Lien direct copié ! Balance-le sur WhatsApp 🔗');
+    } catch {
+      showToast(link);
+    }
+  }
+
+  async function handleShareCard(post) {
+    try {
+      showToast('Création de ta carte Story 9:16… 📸');
+      const result = await generateAndShareStoryCard(post);
+      showToast(
+        result === 'shared'
+          ? 'Carte Story partagée ! 🔥'
+          : 'Carte Story 9:16 téléchargée ! Prête pour ton statut WhatsApp / TikTok 🔥'
+      );
+    } catch {
+      showToast('Impossible de générer la carte image.', 'error');
+    }
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -86,7 +187,7 @@ export default function App() {
           search: debouncedSearch,
           sort,
           page: nextPage,
-          limit: 10,
+          limit: tab === 'SAVED' ? 36 : 10,
         });
         setPosts((prev) => (append ? [...prev, ...res.items] : res.items));
         setPage(nextPage);
@@ -122,16 +223,16 @@ export default function App() {
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setComposerState((s) => ({ ...s, open: false }));
-        setReaderPostId(null);
+        closePost();
         setReportPostId(null);
         setAuthModalOpen(false);
+        setRouletteOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [closePost]);
 
-  // Subtle ambient cursor glow on desktop
   useEffect(() => {
     const onMove = (e) => {
       if (!cursorGlowRef.current || e.pointerType !== 'mouse') return;
@@ -146,28 +247,26 @@ export default function App() {
     return () => window.removeEventListener('pointermove', onMove);
   }, []);
 
-  // GSAP Hero entrance choreography once intro curtain lifts
   useEffect(() => {
     if (showIntro || tab === 'ADMIN' || !heroRef.current) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(
         '.hero-anim',
-        { opacity: 0, y: 26 },
-        { opacity: 1, y: 0, duration: 0.75, stagger: 0.09, ease: 'power3.out' }
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out', clearProps: 'transform,opacity' }
       );
     }, heroRef);
     return () => ctx.revert();
   }, [showIntro, tab]);
 
-  // GSAP staggered feed cards entrance
   useEffect(() => {
     if (loading || !feedRef.current) return;
     const cards = feedRef.current.querySelectorAll('.post-card');
     if (!cards.length) return;
     gsap.fromTo(
       cards,
-      { opacity: 0, y: 30, scale: 0.97 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.06, ease: 'power3.out', clearProps: 'transform' }
+      { opacity: 0, y: 28, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.055, ease: 'power3.out', clearProps: 'transform,opacity' }
     );
   }, [posts, loading, tab]);
 
@@ -194,6 +293,20 @@ export default function App() {
     }
   }
 
+  async function handleVotePoll(postId, choice) {
+    try {
+      const updatedPoll = await api.votePoll(postId, choice);
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, poll: updatedPoll } : p))
+      );
+      showToast('Vote enregistré ! 📊');
+      return updatedPoll;
+    } catch (err) {
+      showToast(err.message, 'error');
+      return null;
+    }
+  }
+
   async function handleDelete(postId) {
     if (!window.confirm('Tu veux vraiment gazer ce post définitivement ?')) return;
     try {
@@ -205,6 +318,9 @@ export default function App() {
       showToast(err.message, 'error');
     }
   }
+
+  const visiblePosts =
+    tab === 'SAVED' ? posts.filter((p) => savedIds.has(p.id)) : posts;
 
   return (
     <>
@@ -240,20 +356,36 @@ export default function App() {
 
           <nav className="nav-pills" aria-label="Navigation principale">
             <button className={`nav-pill ${tab === 'ALL' ? 'active' : ''}`} onClick={() => setTab('ALL')}>
-              <span className="dot dot-all" /> Tout le mouvement
+              <span className="dot dot-all" /> Tout
             </button>
             <button className={`nav-pill ${tab === 'CONFESSION' ? 'active' : ''}`} onClick={() => setTab('CONFESSION')}>
-              <span className="dot dot-conf" /> Gbairai Drôles
+              <span className="dot dot-conf" /> Gbairai
             </button>
             <button className={`nav-pill ${tab === 'STORYTIME' ? 'active' : ''}`} onClick={() => setTab('STORYTIME')}>
               <span className="dot dot-story" /> Storytime
             </button>
+            <button className={`nav-pill ${tab === 'SAVED' ? 'active' : ''}`} onClick={() => setTab('SAVED')}>
+              ⭐ Favoris ({savedIds.size})
+            </button>
             <button className={`nav-pill ${tab === 'ADMIN' ? 'active' : ''}`} onClick={() => setTab('ADMIN')}>
-              🛡️ Modération
+              🛡️ Admin
             </button>
           </nav>
 
           <div className="nav-actions">
+            {installPrompt && (
+              <button className="btn btn-indigo btn-sm" onClick={handleInstallApp} title="Installer sur ton téléphone">
+                📲 App
+              </button>
+            )}
+            <button
+              className="btn-icon"
+              onClick={() => setRouletteOpen(true)}
+              title="Roulette Gbangban (dossier au hasard)"
+              aria-label="Roulette Gbangban"
+            >
+              🎲
+            </button>
             <button
               className="btn-icon"
               onClick={() => setShowIntro(true)}
@@ -270,10 +402,7 @@ export default function App() {
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => setAuthModalOpen(true)}
-            >
+            <button className="btn btn-outline btn-sm" onClick={() => setAuthModalOpen(true)}>
               {user ? `👤 ${user.username}` : 'Connexion'}
             </button>
             <button
@@ -309,7 +438,7 @@ export default function App() {
                   <span className="text-indigo">Storytime</span>.
                 </h1>
                 <p className="hero-desc hero-anim">
-                  Ici sur <strong>Y&apos;A GBAIRAI !</strong>, on dit la vérité sans montrer son visage. Tes gaffes, tes goumins et tes dossiers chauds se lisent en épisodes (Partie 1, Partie 2…). On te donne un blase anonyme en un clic !
+                  Ici sur <strong>Y&apos;A GBAIRAI !</strong>, on dit la vérité sans montrer son visage. Tes gaffes, tes goumins et tes dossiers chauds se lisent en épisodes, s&apos;écoutent en audio et se partagent en Carte Story 9:16 !
                 </p>
                 <div className="hero-cta hero-anim">
                   <button
@@ -323,6 +452,9 @@ export default function App() {
                     onClick={() => setComposerState({ open: true, type: 'STORYTIME', sequelSeries: null })}
                   >
                     📖 Lancer un Storytime
+                  </button>
+                  <button className="btn btn-outline btn-lg" onClick={() => setRouletteOpen(true)}>
+                    🎲 Roulette
                   </button>
                 </div>
               </div>
@@ -352,6 +484,26 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Weekly Top Crown Banner */}
+            {meta.weeklyTopPost && tab !== 'SAVED' && (
+              <section className="weekly-crown-card" onClick={() => openPost(meta.weeklyTopPost.id)}>
+                <div className="weekly-crown-badge">🏆 LE GBAIRAI DE LA SEMAINE</div>
+                <div className="weekly-crown-body">
+                  <div>
+                    <strong className="weekly-crown-title">
+                      {meta.weeklyTopPost.title || meta.weeklyTopPost.content.slice(0, 90) + '…'}
+                    </strong>
+                    <span className="meta-subtle" style={{ display: 'block', marginTop: 4 }}>
+                      Par {meta.weeklyTopPost.authorAlias} • 🔥 {meta.weeklyTopPost.reactionsCount} réactions • 💬 {meta.weeklyTopPost.commentsCount} avis • 👁 {meta.weeklyTopPost.viewsCount} vues
+                    </span>
+                  </div>
+                  <button type="button" className="btn btn-coral btn-sm">
+                    Lire le top dossier →
+                  </button>
+                </div>
+              </section>
+            )}
 
             {/* Controls */}
             <section className="controls-row">
@@ -409,47 +561,58 @@ export default function App() {
                   <div key={n} className="skeleton" />
                 ))}
               </div>
-            ) : posts.length === 0 ? (
+            ) : visiblePosts.length === 0 ? (
               <div className="empty-hero-card">
-                <div style={{ fontSize: '3.2rem', marginBottom: 10 }}>🔥</div>
+                <div style={{ fontSize: '3.2rem', marginBottom: 10 }}>
+                  {tab === 'SAVED' ? '⭐' : '🔥'}
+                </div>
                 <h3 style={{ margin: '0 0 8px', fontSize: '1.35rem' }}>
-                  Le maquis est encore calme ici !
+                  {tab === 'SAVED' ? 'Aucun dossier sauvegardé' : 'Le maquis est encore calme ici !'}
                 </h3>
                 <p className="meta-subtle" style={{ marginBottom: 20, maxWidth: '46ch', marginInline: 'auto', fontSize: '0.92rem' }}>
-                  Aucun faux bot ici : que du 100% réel ! Sois le premier à mettre le feu en versant ton premier gbairai anonyme ou ton Storytime.
+                  {tab === 'SAVED'
+                    ? 'Clique sur l’étoile ☆ d’un gbairai ou d’un Storytime pour le garder ici et suivre la suite.'
+                    : 'Aucun faux bot ici : que du 100% réel ! Sois le premier à mettre le feu en versant ton premier gbairai anonyme ou ton Storytime.'}
                 </p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-coral"
-                    onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
-                  >
-                    🎭 Verser le 1er gbairai
-                  </button>
-                  <button
-                    className="btn btn-indigo"
-                    onClick={() => setComposerState({ open: true, type: 'STORYTIME', sequelSeries: null })}
-                  >
-                    📖 Lancer le 1er Storytime
-                  </button>
-                </div>
+                {tab !== 'SAVED' && (
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-coral"
+                      onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
+                    >
+                      🎭 Verser le 1er gbairai
+                    </button>
+                    <button
+                      className="btn btn-indigo"
+                      onClick={() => setComposerState({ open: true, type: 'STORYTIME', sequelSeries: null })}
+                    >
+                      📖 Lancer le 1er Storytime
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
                 <div className="feed-grid" ref={feedRef}>
-                  {posts.map((post) => (
+                  {visiblePosts.map((post) => (
                     <PostCard
                       key={post.id}
                       post={post}
+                      isSaved={savedIds.has(post.id)}
+                      onToggleSave={toggleSave}
                       onReact={handleReact}
-                      onOpen={setReaderPostId}
+                      onVotePoll={handleVotePoll}
+                      onOpen={openPost}
                       onTagClick={(slug) => setActiveTag(slug)}
+                      onCopyLink={handleCopyLink}
+                      onShareCard={handleShareCard}
                       onReport={setReportPostId}
                       onDelete={handleDelete}
                     />
                   ))}
                 </div>
 
-                {hasMore && (
+                {hasMore && tab !== 'SAVED' && (
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: 26 }}>
                     <button className="btn btn-outline" onClick={() => loadFeed({ nextPage: page + 1, append: true })}>
                       Voir plus de gbairais
@@ -476,9 +639,13 @@ export default function App() {
           <span>📖</span>
           <span>Storytime</span>
         </button>
+        <button className={`mobile-nav-btn ${tab === 'SAVED' ? 'active' : ''}`} onClick={() => setTab('SAVED')}>
+          <span>⭐</span>
+          <span>Favoris</span>
+        </button>
         <button className={`mobile-nav-btn ${tab === 'ADMIN' ? 'active' : ''}`} onClick={() => setTab('ADMIN')}>
           <span>🛡️</span>
-          <span>Modération</span>
+          <span>Admin</span>
         </button>
       </nav>
 
@@ -493,7 +660,7 @@ export default function App() {
           loadMeta();
           loadFeed({ nextPage: 1 });
           if (composerState.sequelSeries && created?.id) {
-            setReaderPostId(created.id);
+            openPost(created.id);
           }
         }}
         onToast={showToast}
@@ -501,9 +668,12 @@ export default function App() {
 
       <ReaderModal
         postId={readerPostId}
-        onClose={() => setReaderPostId(null)}
-        onOpenPost={setReaderPostId}
+        onClose={closePost}
+        onOpenPost={openPost}
         onReact={handleReact}
+        onVotePoll={handleVotePoll}
+        onCopyLink={handleCopyLink}
+        onShareCard={handleShareCard}
         onOpenSequel={(series) => {
           setComposerState({ open: true, type: 'STORYTIME', sequelSeries: series });
         }}
@@ -513,6 +683,13 @@ export default function App() {
           loadMeta();
           loadFeed({ nextPage: 1 });
         }}
+      />
+
+      <RouletteModal
+        open={rouletteOpen}
+        onClose={() => setRouletteOpen(false)}
+        onOpenPost={openPost}
+        onToast={showToast}
       />
 
       <ReportModal

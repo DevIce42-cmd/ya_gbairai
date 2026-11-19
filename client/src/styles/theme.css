@@ -1667,3 +1667,197 @@ button, input, textarea, select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   POLLS, WEEKLY CROWN, THREADED COMMENTS & ROULETTE
+   ========================================================= */
+.weekly-crown-card {
+  margin-bottom: 22px;
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(120deg, rgba(255, 181, 71, 0.16), rgba(255, 107, 91, 0.14), rgba(99, 102, 241, 0.12));
+  border: 1px solid rgba(255, 181, 71, 0.45);
+  box-shadow: 0 12px 30px rgba(255, 181, 71, 0.12);
+  cursor: pointer;
+  transition: transform 200ms var(--ease);
+}
+
+.weekly-crown-card:hover {
+  transform: translateY(-2px);
+}
+
+.weekly-crown-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+
+.weekly-crown-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.weekly-crown-title {
+  font-size: 1.08rem;
+  color: var(--text);
+}
+
+/* Quick Poll */
+.poll-box {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+}
+
+.poll-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.poll-options {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.poll-opt {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+}
+
+.poll-opt.selected {
+  border-color: var(--amber);
+}
+
+.poll-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  opacity: 0.22;
+  transition: width 420ms var(--ease);
+  pointer-events: none;
+}
+
+.fill-a { background: linear-gradient(90deg, var(--coral), var(--amber)); }
+.fill-b { background: linear-gradient(90deg, var(--indigo), var(--violet)); }
+
+.poll-opt-text,
+.poll-opt-pct {
+  position: relative;
+  z-index: 1;
+}
+
+.poll-composer {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+}
+
+.poll-check-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.poll-check-label input {
+  width: auto !important;
+}
+
+.poll-composer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Reader Toolbar & Threaded Comments */
+.reader-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.reply-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--indigo-soft);
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.comment-action-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.comment-action-btn:hover,
+.comment-action-btn.liked {
+  color: var(--coral);
+}
+
+.comment-replies {
+  margin-left: 24px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border-strong);
+  margin-bottom: 10px;
+}
+
+.reply-card {
+  background: var(--bg);
+}
+
+/* Roulette 3D Card */
+.roulette-card {
+  padding: 24px;
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-strong);
+  transition: transform 360ms var(--ease), opacity 360ms ease;
+}
+
+.roulette-card.spinning {
+  transform: perspective(800px) rotateY(90deg) scale(0.92);
+  opacity: 0.4;
+}

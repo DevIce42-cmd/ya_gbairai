@@ -5,6 +5,7 @@ const {
   validateCreatePost,
   validateAddPart,
   validateComment,
+  validatePollVote,
   validateReaction,
   validateReport,
 } = require('../validators/contentValidator');
@@ -21,6 +22,18 @@ async function listPosts(req, res, next) {
         page: req.query.page,
         limit: req.query.limit,
       },
+      req
+    );
+    res.json({ ok: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getRandomPost(req, res, next) {
+  try {
+    const data = await postService.getRandomPost(
+      { type: req.query.type, excludeId: req.query.excludeId },
       req
     );
     res.json({ ok: true, data });
@@ -72,11 +85,30 @@ async function toggleReaction(req, res, next) {
   }
 }
 
+async function votePoll(req, res, next) {
+  try {
+    const { choice } = validatePollVote(req.body);
+    const data = await postService.votePoll(req.params.id, choice, req);
+    res.json({ ok: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function addComment(req, res, next) {
   try {
     const validated = validateComment(req.body);
     const data = await postService.addComment(req.params.id, validated, req);
     res.status(201).json({ ok: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function toggleCommentLike(req, res, next) {
+  try {
+    const data = await postService.toggleCommentLike(req.params.id, req);
+    res.json({ ok: true, data });
   } catch (err) {
     next(err);
   }
@@ -123,11 +155,14 @@ function getAlias(_req, res) {
 
 module.exports = {
   listPosts,
+  getRandomPost,
   getPost,
   createPost,
   addPart,
   toggleReaction,
+  votePoll,
   addComment,
+  toggleCommentLike,
   reportPost,
   deletePost,
   getMeta,

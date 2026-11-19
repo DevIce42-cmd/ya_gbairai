@@ -17,6 +17,10 @@ export default function ComposerModal({
   const [authorAlias, setAuthorAlias] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [customTag, setCustomTag] = useState('');
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('Verdict de la famille ?');
+  const [pollOptionA, setPollOptionA] = useState('Tu gères 👏');
+  const [pollOptionB, setPollOptionB] = useState('Tu as gâté 😅');
   const [submitting, setSubmitting] = useState(false);
 
   const isSequel = Boolean(sequelSeries);
@@ -30,6 +34,10 @@ export default function ComposerModal({
     setPlotTwist('');
     setSelectedTags([]);
     setCustomTag('');
+    setPollEnabled(false);
+    setPollQuestion('Verdict de la famille ?');
+    setPollOptionA('Tu gères 👏');
+    setPollOptionB('Tu as gâté 😅');
     if (!sequelSeries) {
       api.getAlias().then(setAuthorAlias).catch(() => setAuthorAlias('GarbaFurtif225'));
     }
@@ -74,6 +82,10 @@ export default function ComposerModal({
           title: title.trim(),
           content: content.trim(),
           plotTwist: plotTwist.trim(),
+          pollEnabled,
+          pollQuestion: pollQuestion.trim(),
+          pollOptionA: pollOptionA.trim(),
+          pollOptionB: pollOptionB.trim(),
           authorAlias: authorAlias.trim(),
           tags: allTags,
         });
@@ -193,6 +205,45 @@ export default function ComposerModal({
               placeholder="Garde la chute finale cachée pour surprendre tout le monde…"
             />
           </div>
+
+          {/* Optional Quick Poll */}
+          {!isSequel && (
+            <div className="form-group poll-composer">
+              <label className="poll-check-label">
+                <input
+                  type="checkbox"
+                  checked={pollEnabled}
+                  onChange={(e) => setPollEnabled(e.target.checked)}
+                />
+                <span>📊 Activer un sondage rapide (« Qui a tort ? »)</span>
+              </label>
+
+              {pollEnabled && (
+                <div className="poll-composer-fields">
+                  <input
+                    value={pollQuestion}
+                    onChange={(e) => setPollQuestion(e.target.value)}
+                    maxLength={100}
+                    placeholder="Question du sondage…"
+                  />
+                  <div className="mode-grid" style={{ marginBottom: 0 }}>
+                    <input
+                      value={pollOptionA}
+                      onChange={(e) => setPollOptionA(e.target.value)}
+                      maxLength={40}
+                      placeholder="Option 1"
+                    />
+                    <input
+                      value={pollOptionB}
+                      onChange={(e) => setPollOptionB(e.target.value)}
+                      maxLength={40}
+                      placeholder="Option 2"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {!isSequel && (
             <div className="form-group">

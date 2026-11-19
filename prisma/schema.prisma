@@ -53,6 +53,9 @@ model Post {
   title           String?
   content         String
   plotTwist       String?
+  pollQuestion    String?
+  pollOptionA     String?
+  pollOptionB     String?
   authorAlias     String
   authorTokenHash String?
   userId          String?
@@ -71,12 +74,25 @@ model Post {
 
   tags      PostTag[]
   reactions Reaction[]
+  pollVotes PollVote[]
   comments  Comment[]
   reports   Report[]
 
   @@index([type, status, hotScore])
   @@index([type, status, createdAt])
   @@index([seriesId, partNumber])
+}
+
+model PollVote {
+  id        Int      @id @default(autoincrement())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  actorKey  String
+  choice    String   // "A" | "B"
+  createdAt DateTime @default(now())
+
+  @@unique([postId, actorKey])
+  @@index([postId])
 }
 
 model Tag {
@@ -109,18 +125,35 @@ model Reaction {
 }
 
 model Comment {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   postId      String
-  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post        Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[]     @relation("CommentReplies")
   userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   authorAlias String
   content     String
-  status      String   @default("PUBLISHED") // "PUBLISHED" | "HIDDEN"
-  createdAt   DateTime @default(now())
+  likesCount  Int           @default(0)
+  status      String        @default("PUBLISHED") // "PUBLISHED" | "HIDDEN"
+  createdAt   DateTime      @default(now())
+  likes       CommentLike[]
   reports     Report[]
 
   @@index([postId, createdAt])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        Int      @id @default(autoincrement())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  actorKey  String
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, actorKey])
+  @@index([commentId])
 }
 
 model Report {
