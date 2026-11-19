@@ -1370,3 +1370,153 @@ button, input, textarea, select {
 @media (max-width: 600px) {
   .mode-grid { grid-template-columns: 1fr; }
 }
+
+/* =========================================================
+   GSAP PoWapLP CONTINUOUS WIPE INTRO + 3D INTERACTIVITY
+   ========================================================= */
+.intro-stage {
+  cursor: default;
+}
+
+.intro-outer,
+.intro-inner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.intro-scene-bg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px 24px 120px;
+}
+
+.intro-bg-coral {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(255, 107, 91, 0.36), transparent 50%),
+    radial-gradient(circle at 80% 76%, rgba(255, 181, 71, 0.28), transparent 52%),
+    linear-gradient(155deg, #160c1f 0%, #0b0912 65%, #190e1a 100%);
+}
+
+.intro-bg-indigo {
+  background:
+    radial-gradient(circle at 78% 26%, rgba(99, 102, 241, 0.42), transparent 52%),
+    radial-gradient(circle at 20% 78%, rgba(168, 85, 247, 0.32), transparent 50%),
+    linear-gradient(155deg, #0d1028 0%, #0b0912 65%, #160c26 100%);
+}
+
+.intro-bg-brand {
+  background:
+    radial-gradient(circle at 25% 30%, rgba(255, 107, 91, 0.38), transparent 48%),
+    radial-gradient(circle at 75% 70%, rgba(99, 102, 241, 0.38), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 181, 71, 0.14), transparent 60%),
+    #0b0912;
+}
+
+.split-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.intro-logo-brand .split-char {
+  background: linear-gradient(110deg, #ffffff 10%, var(--coral) 48%, var(--amber) 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.intro-hud {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.intro-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.intro-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 0;
+  transition: width 240ms var(--ease), background 240ms var(--ease);
+}
+
+.intro-dot.active {
+  width: 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--coral), var(--amber));
+}
+
+.intro-progress-long {
+  animation-duration: 5.5s !important;
+}
+
+/* Ambient Interactive Cursor Glow */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 360px;
+  height: 360px;
+  margin-left: -180px;
+  margin-top: -180px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, rgba(255, 107, 91, 0.13) 0%, rgba(99, 102, 241, 0.08) 42%, transparent 72%);
+  filter: blur(22px);
+  will-change: transform;
+}
+
+[data-theme='light'] .cursor-glow {
+  opacity: 0.45;
+}
+
+/* 3D Card Pointer Spotlight */
+.card-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  background: radial-gradient(
+    280px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 107, 91, 0.14),
+    transparent 65%
+  );
+}
+
+.post-card.STORYTIME .card-spotlight {
+  background: radial-gradient(
+    280px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(99, 102, 241, 0.16),
+    transparent 65%
+  );
+}
+
+.post-card:hover .card-spotlight {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .cursor-glow,
+  .card-spotlight {
+    display: none;
+  }
+}

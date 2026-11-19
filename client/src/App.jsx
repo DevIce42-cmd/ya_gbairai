@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 import { api } from './api';
 import PostCard from './components/PostCard';
 import ComposerModal from './components/ComposerModal';
@@ -7,7 +8,7 @@ import ReportModal from './components/ReportModal';
 import AdminPanel from './components/AdminPanel';
 import IntroOverlay from './components/IntroOverlay';
 
-const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v2';
+const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SEEN_KEY));
@@ -22,6 +23,10 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const heroRef = useRef(null);
+  const feedRef = useRef(null);
+  const cursorGlowRef = useRef(null);
 
   const [meta, setMeta] = useState({
     stats: { confessions: 0, stories: 0, reactions: 0, comments: 0, views: 0 },
@@ -112,6 +117,46 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Subtle ambient cursor glow on desktop
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!cursorGlowRef.current || e.pointerType !== 'mouse') return;
+      gsap.to(cursorGlowRef.current, {
+        x: e.clientX,
+        y: e.clientY,
+        duration: 0.55,
+        ease: 'power2.out',
+      });
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, []);
+
+  // GSAP Hero entrance choreography once intro curtain lifts
+  useEffect(() => {
+    if (showIntro || tab === 'ADMIN' || !heroRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.hero-anim',
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.75, stagger: 0.09, ease: 'power3.out' }
+      );
+    }, heroRef);
+    return () => ctx.revert();
+  }, [showIntro, tab]);
+
+  // GSAP staggered feed cards entrance
+  useEffect(() => {
+    if (loading || !feedRef.current) return;
+    const cards = feedRef.current.querySelectorAll('.post-card');
+    if (!cards.length) return;
+    gsap.fromTo(
+      cards,
+      { opacity: 0, y: 30, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.55, stagger: 0.06, ease: 'power3.out', clearProps: 'transform' }
+    );
+  }, [posts, loading, tab]);
+
   async function handleReact(postId, type) {
     try {
       const updated = await api.toggleReaction(postId, type);
@@ -150,6 +195,8 @@ export default function App() {
   return (
     <>
       <IntroOverlay visible={showIntro} onFinish={handleIntroFinish} />
+
+      <div ref={cursorGlowRef} className="cursor-glow" aria-hidden="true" />
 
       <div className="ambient-bg" aria-hidden="true">
         <div className="orb orb-1" />
@@ -231,20 +278,20 @@ export default function App() {
         ) : (
           <>
             {/* Hero */}
-            <section className="hero">
+            <section className="hero" ref={heroRef}>
               <div>
-                <div className="hero-eyebrow">
+                <div className="hero-eyebrow hero-anim">
                   <span className="live-dot" />
                   <span>Gbangban tard le soir • 100% En Scred • Zéro compte</span>
                 </div>
-                <h1>
+                <h1 className="hero-anim">
                   Viens verser ton <span className="text-coral">gbairai drôle</span> ou raconte ton meilleur{' '}
                   <span className="text-indigo">Storytime</span>.
                 </h1>
-                <p className="hero-desc">
+                <p className="hero-desc hero-anim">
                   Ici sur <strong>Y&apos;A GBAIRAI !</strong>, on dit la vérité sans montrer son visage. Tes gaffes, tes goumins et tes dossiers chauds se lisent en épisodes (Partie 1, Partie 2…). On te donne un blase anonyme en un clic !
                 </p>
-                <div className="hero-cta">
+                <div className="hero-cta hero-anim">
                   <button
                     className="btn btn-coral btn-lg"
                     onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
@@ -260,7 +307,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="stats-panel">
+              <div className="stats-panel hero-anim">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <strong style={{ fontSize: '0.86rem' }}>Le mouvement en direct</strong>
                   <span className="badge-type CONFESSION">EN FEU</span>
@@ -368,7 +415,7 @@ export default function App() {
               </div>
             ) : (
               <>
-                <div className="feed-grid">
+                <div className="feed-grid" ref={feedRef}>
                   {posts.map((post) => (
                     <PostCard
                       key={post.id}

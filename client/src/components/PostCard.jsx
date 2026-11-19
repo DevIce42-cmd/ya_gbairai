@@ -1,10 +1,28 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { REACTIONS, formatRelativeTime, formatReadingTime, getAvatarBg } from '../utils';
 
 export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, onDelete }) {
   const [twistRevealed, setTwistRevealed] = useState(false);
   const [burstEmoji, setBurstEmoji] = useState(null);
+  const cardRef = useRef(null);
   const isStory = post.type === 'STORYTIME';
+
+  function handlePointerMove(e) {
+    if (e.pointerType !== 'mouse' || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rx = ((y / rect.height) - 0.5) * -5;
+    const ry = ((x / rect.width) - 0.5) * 5;
+    cardRef.current.style.setProperty('--mx', `${x}px`);
+    cardRef.current.style.setProperty('--my', `${y}px`);
+    cardRef.current.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-4px)`;
+  }
+
+  function handlePointerLeave() {
+    if (!cardRef.current) return;
+    cardRef.current.style.transform = '';
+  }
 
   function handleEmojiClick(type, emoji) {
     const isAlreadyActive = (post.userReactions || []).includes(type);
@@ -16,7 +34,14 @@ export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, 
   }
 
   return (
-    <article className={`post-card ${post.type}`}>
+    <article
+      ref={cardRef}
+      className={`post-card ${post.type}`}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      <div className="card-spotlight" aria-hidden="true" />
+
       <div className="card-head">
         <div className="badges-row">
           <span className={`badge-type ${post.type}`}>
