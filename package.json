@@ -7,10 +7,10 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "vite build",
-    "build:render": "npm install --include=dev && npx prisma generate && npx prisma db push && npm run db:seed && npm run build",
-    "start": "node server/index.js",
-    "start:prod": "npx prisma db push && npm run db:seed && node server/index.js",
+    "build": "npx prisma generate && vite build",
+    "build:render": "npm install --include=dev && npx prisma generate && npx prisma db push && npm run db:seed && vite build",
+    "start": "npx prisma db push --skip-generate && npm run db:seed && node server/index.js",
+    "start:prod": "npx prisma db push --skip-generate && npm run db:seed && node server/index.js",
     "dev:server": "node --watch server/index.js",
     "dev:client": "vite",
     "db:generate": "prisma generate",
@@ -30,12 +30,12 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "express": "^5.1.0",
+    "prisma": "^6.19.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "prisma": "^6.19.3",
     "vite": "^6.0.0"
   }
 }
