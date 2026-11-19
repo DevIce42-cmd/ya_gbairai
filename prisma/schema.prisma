@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model StorySeries {
+  id              String   @id @default(cuid())
+  title           String
+  authorTokenHash String
+  createdAt       DateTime @default(now())
+  posts           Post[]
+}
+
+model Post {
+  id              String       @id @default(cuid())
+  type            String       // "CONFESSION" | "STORYTIME"
+  title           String?
+  content         String
+  plotTwist       String?
+  authorAlias     String
+  authorTokenHash String?
+  seriesId        String?
+  series          StorySeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  partNumber      Int?
+  readingTimeSec  Int          @default(30)
+  viewsCount      Int          @default(0)
+  reactionsCount  Int          @default(0)
+  commentsCount   Int          @default(0)
+  hotScore        Float        @default(1.0)
+  status          String       @default("PUBLISHED") // "PUBLISHED" | "FLAGGED" | "HIDDEN"
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tags      PostTag[]
+  reactions Reaction[]
+  comments  Comment[]
+  reports   Report[]
+
+  @@index([type, status, hotScore])
+  @@index([type, status, createdAt])
+  @@index([seriesId, partNumber])
+}
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  slug  String    @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  actorKey  String
+  type      String   // "LAUGH" | "SKULL" | "MIND_BLOWN" | "FIRE"
+  createdAt DateTime @default(now())
+
+  @@unique([postId, actorKey, type])
+  @@index([postId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorAlias String
+  content     String
+  status      String   @default("PUBLISHED") // "PUBLISHED" | "HIDDEN"
+  createdAt   DateTime @default(now())
+  reports     Report[]
+
+  @@index([postId, createdAt])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId   String?
+  comment     Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reason      String
+  details     String?
+  reporterKey String
+  status      String   @default("OPEN") // "OPEN" | "RESOLVED" | "DISMISSED"
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
+}

@@ -1,0 +1,41 @@
+{
+  "name": "ya-gbairai",
+  "version": "1.0.0",
+  "description": "Y'A GBAIRAI ! — Confessions Anonymes Drôles & Storytimes sans filtre",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "vite build",
+    "build:render": "npm install --include=dev && npx prisma generate && npx prisma db push && npm run db:seed && npm run build",
+    "start": "node server/index.js",
+    "start:prod": "npx prisma db push && npm run db:seed && node server/index.js",
+    "dev:server": "node --watch server/index.js",
+    "dev:client": "vite",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "ya-gbairai",
+    "confessions",
+    "storytime",
+    "prisma",
+    "react"
+  ],
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "express": "^5.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "prisma": "^6.19.3",
+    "vite": "^6.0.0"
+  }
+}

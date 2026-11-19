@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ya-gbairai
+    runtime: node
+    plan: free
+    buildCommand: npm run build:render
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: ADMIN_KEY
+        generateValue: true
