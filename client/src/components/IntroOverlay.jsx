@@ -30,12 +30,11 @@ const SCENES = [
 
 const EMBERS = [
   { left: '10%', delay: '0s', dur: '3.6s', size: 5, color: 'var(--coral)' },
-  { left: '22%', delay: '0.5s', dur: '3.1s', size: 4, color: 'var(--amber)' },
-  { left: '36%', delay: '0.2s', dur: '3.9s', size: 6, color: 'var(--violet)' },
-  { left: '50%', delay: '0.7s', dur: '3.3s', size: 5, color: 'var(--coral)' },
-  { left: '64%', delay: '0.1s', dur: '3.7s', size: 4, color: 'var(--indigo)' },
-  { left: '78%', delay: '0.6s', dur: '3.2s', size: 6, color: 'var(--amber)' },
-  { left: '90%', delay: '0.3s', dur: '3.5s', size: 5, color: 'var(--violet)' },
+  { left: '24%', delay: '0.5s', dur: '3.1s', size: 4, color: 'var(--amber)' },
+  { left: '38%', delay: '0.2s', dur: '3.9s', size: 6, color: 'var(--violet)' },
+  { left: '54%', delay: '0.7s', dur: '3.3s', size: 5, color: 'var(--coral)' },
+  { left: '70%', delay: '0.1s', dur: '3.7s', size: 4, color: 'var(--indigo)' },
+  { left: '84%', delay: '0.6s', dur: '3.2s', size: 6, color: 'var(--amber)' },
 ];
 
 export default function IntroOverlay({ visible, onFinish }) {
@@ -44,16 +43,22 @@ export default function IntroOverlay({ visible, onFinish }) {
   const innerRefs = useRef([]);
   const bgRefs = useRef([]);
   const headingRefs = useRef([]);
-  const currentIdxRef = useRef(-1);
+  const currentIdxRef = useRef(0);
   const animatingRef = useRef(false);
   const exitingRef = useRef(false);
-  const timerRef = useRef(null);
+  const timersRef = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [runKey, setRunKey] = useState(0);
+
+  const clearAllTimers = useCallback(() => {
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+  }, []);
 
   const exitOverlay = useCallback(() => {
     if (exitingRef.current) return;
     exitingRef.current = true;
-    clearTimeout(timerRef.current);
+    clearAllTimers();
 
     if (!stageRef.current) {
       onFinish();
@@ -62,15 +67,15 @@ export default function IntroOverlay({ visible, onFinish }) {
 
     gsap.to(stageRef.current, {
       yPercent: -100,
-      duration: 0.9,
+      duration: 0.85,
       ease: 'power4.inOut',
       onComplete: () => {
         onFinish();
       },
     });
-  }, [onFinish]);
+  }, [clearAllTimers, onFinish]);
 
-  const gotoScene = useCallback((index, direction = 1) => {
+  const gotoScene = useCallback((index, direction = 1, manual = false) => {
     if (exitingRef.current || animatingRef.current) return;
     if (index >= SCENES.length) {
       exitOverlay();
@@ -81,113 +86,119 @@ export default function IntroOverlay({ visible, onFinish }) {
     const prevIdx = currentIdxRef.current;
     if (prevIdx === index) return;
 
+    if (manual) {
+      clearAllTimers();
+      timersRef.current.push(setTimeout(() => exitOverlay(), 2600));
+    }
+
     animatingRef.current = true;
     const dFactor = direction === -1 ? -1 : 1;
-
-    const tl = gsap.timeline({
-      defaults: { duration: 1.05, ease: 'power3.inOut' },
-      onComplete: () => {
-        animatingRef.current = false;
-      },
-    });
 
     const outers = outerRefs.current;
     const inners = innerRefs.current;
     const bgs = bgRefs.current;
     const headings = headingRefs.current;
 
-    if (prevIdx >= 0 && outers[prevIdx]) {
-      gsap.set(outers[prevIdx], { zIndex: 1 });
-      tl.to(bgs[prevIdx], { yPercent: -18 * dFactor, scale: 1.08 }, 0)
-        .set(outers[prevIdx], { autoAlpha: 0 });
-    }
+    const tl = gsap.timeline({
+      defaults: { duration: 1.0, ease: 'power3.inOut' },
+      onComplete: () => {
+        if (outers[prevIdx]) gsap.set(outers[prevIdx], { autoAlpha: 0, zIndex: 0 });
+        animatingRef.current = false;
+      },
+    });
 
+    gsap.set(outers[prevIdx], { zIndex: 1 });
     gsap.set(outers[index], { autoAlpha: 1, zIndex: 2 });
 
-    // Brian Cross PoWapLP counter-parallax outer/inner wipe
-    tl.fromTo(
-      [outers[index], inners[index]],
-      {
-        yPercent: (i) => (i ? -100 * dFactor : 100 * dFactor),
-      },
-      { yPercent: 0 },
-      0
-    ).fromTo(
-      bgs[index],
-      { yPercent: 18 * dFactor, scale: 1.12 },
-      { yPercent: 0, scale: 1 },
-      0
-    );
+    tl.to(bgs[prevIdx], { yPercent: -16 * dFactor, scale: 1.08 }, 0)
+      .fromTo(
+        [outers[index], inners[index]],
+        { yPercent: (i) => (i ? -100 * dFactor : 100 * dFactor) },
+        { yPercent: 0 },
+        0
+      )
+      .fromTo(
+        bgs[index],
+        { yPercent: 16 * dFactor, scale: 1.1 },
+        { yPercent: 0, scale: 1 },
+        0
+      );
 
     const chars = headings[index]?.querySelectorAll('.split-char');
-    if (chars && chars.length) {
+    if (chars?.length) {
       tl.fromTo(
         chars,
-        { autoAlpha: 0, yPercent: 120 * dFactor, rotateX: -40 },
+        { autoAlpha: 0, yPercent: 110 * dFactor },
         {
           autoAlpha: 1,
           yPercent: 0,
-          rotateX: 0,
-          duration: 0.8,
+          duration: 0.75,
           ease: 'power3.out',
-          stagger: { each: 0.032, from: 'random' },
+          stagger: { each: 0.03, from: 'start' },
         },
-        0.18
+        0.2
       );
     }
 
     currentIdxRef.current = index;
     setActiveIndex(index);
-  }, [exitOverlay]);
+  }, [clearAllTimers, exitOverlay]);
 
   useEffect(() => {
     if (!visible) return;
+    clearAllTimers();
     exitingRef.current = false;
     animatingRef.current = false;
-    currentIdxRef.current = -1;
+    currentIdxRef.current = 0;
+    setActiveIndex(0);
+    setRunKey((k) => k + 1);
 
-    // Reset all scenes
+    // Show Scene 0 cleanly without blank flash
     outerRefs.current.forEach((el, i) => {
       if (!el) return;
-      gsap.set(el, { autoAlpha: 0, zIndex: 0, yPercent: 0 });
+      gsap.killTweensOf([el, innerRefs.current[i], bgRefs.current[i]]);
+      gsap.set(el, { autoAlpha: i === 0 ? 1 : 0, zIndex: i === 0 ? 2 : 0, yPercent: 0 });
       if (innerRefs.current[i]) gsap.set(innerRefs.current[i], { yPercent: 0 });
+      if (bgRefs.current[i]) gsap.set(bgRefs.current[i], { yPercent: 0, scale: 1 });
     });
+
     if (stageRef.current) {
-      gsap.set(stageRef.current, { yPercent: 0 });
+      gsap.killTweensOf(stageRef.current);
+      gsap.set(stageRef.current, { yPercent: 0, opacity: 1 });
     }
 
-    // Play cinematic 3-scene sequence (~5.6s total)
-    gotoScene(0, 1);
+    const firstChars = headingRefs.current[0]?.querySelectorAll('.split-char');
+    if (firstChars?.length) {
+      gsap.fromTo(
+        firstChars,
+        { autoAlpha: 0, yPercent: 90 },
+        { autoAlpha: 1, yPercent: 0, duration: 0.75, ease: 'power3.out', stagger: 0.04 }
+      );
+    }
 
-    const t1 = setTimeout(() => gotoScene(1, 1), 1750);
-    const t2 = setTimeout(() => gotoScene(2, 1), 3550);
-    timerRef.current = setTimeout(() => exitOverlay(), 5650);
+    timersRef.current = [
+      setTimeout(() => gotoScene(1, 1), 1850),
+      setTimeout(() => gotoScene(2, 1), 3750),
+      setTimeout(() => exitOverlay(), 5800),
+    ];
 
-    // Interactive wheel navigation (PoWapLP Observer feel)
     const onWheel = (e) => {
       if (animatingRef.current || exitingRef.current) return;
-      if (e.deltaY > 20) {
-        gotoScene(currentIdxRef.current + 1, 1);
-      } else if (e.deltaY < -20 && currentIdxRef.current > 0) {
-        gotoScene(currentIdxRef.current - 1, -1);
-      }
+      if (e.deltaY > 25) gotoScene(currentIdxRef.current + 1, 1, true);
+      else if (e.deltaY < -25 && currentIdxRef.current > 0) gotoScene(currentIdxRef.current - 1, -1, true);
     };
 
     window.addEventListener('wheel', onWheel, { passive: true });
-
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(timerRef.current);
+      clearAllTimers();
       window.removeEventListener('wheel', onWheel);
     };
-  }, [visible, gotoScene, exitOverlay]);
+  }, [visible, clearAllTimers, gotoScene, exitOverlay]);
 
   if (!visible) return null;
 
   return (
     <div ref={stageRef} className="intro-stage" role="dialog" aria-label="Introduction Y'A GBAIRAI !">
-      {/* Floating Embers */}
       <div className="intro-embers" aria-hidden="true">
         {EMBERS.map((e, idx) => (
           <span
@@ -205,27 +216,14 @@ export default function IntroOverlay({ visible, onFinish }) {
         ))}
       </div>
 
-      {/* Continuous Wipe Sections (PoWapLP architecture) */}
       {SCENES.map((scene, idx) => (
         <section
           key={scene.id}
-          ref={(el) => {
-            outerRefs.current[idx] = el;
-          }}
+          ref={(el) => { outerRefs.current[idx] = el; }}
           className="intro-outer"
         >
-          <div
-            ref={(el) => {
-              innerRefs.current[idx] = el;
-            }}
-            className="intro-inner"
-          >
-            <div
-              ref={(el) => {
-                bgRefs.current[idx] = el;
-              }}
-              className={`intro-scene-bg intro-bg-${scene.accent}`}
-            >
+          <div ref={(el) => { innerRefs.current[idx] = el; }} className="intro-inner">
+            <div ref={(el) => { bgRefs.current[idx] = el; }} className={`intro-scene-bg intro-bg-${scene.accent}`}>
               <div className="intro-center">
                 <div className="intro-emblem-wrap">
                   <div className="intro-halo" />
@@ -236,9 +234,7 @@ export default function IntroOverlay({ visible, onFinish }) {
                 <div className="intro-kicker">{scene.kicker}</div>
 
                 <h1
-                  ref={(el) => {
-                    headingRefs.current[idx] = el;
-                  }}
+                  ref={(el) => { headingRefs.current[idx] = el; }}
                   className={`intro-logo ${scene.accent === 'brand' ? 'intro-logo-brand' : ''}`}
                 >
                   {scene.title.split('').map((ch, cIdx) => (
@@ -255,7 +251,6 @@ export default function IntroOverlay({ visible, onFinish }) {
         </section>
       ))}
 
-      {/* Persistent Bottom Controls */}
       <div className="intro-hud">
         <div className="intro-dots" role="tablist" aria-label="Scènes d'introduction">
           {SCENES.map((s, i) => (
@@ -263,14 +258,14 @@ export default function IntroOverlay({ visible, onFinish }) {
               key={s.id}
               type="button"
               className={`intro-dot ${activeIndex === i ? 'active' : ''}`}
-              onClick={() => gotoScene(i, i >= activeIndex ? 1 : -1)}
+              onClick={() => gotoScene(i, i >= activeIndex ? 1 : -1, true)}
               aria-label={`Scène ${i + 1}`}
             />
           ))}
         </div>
 
         <div className="intro-progress-track">
-          <div className="intro-progress-bar intro-progress-long" />
+          <div key={runKey} className="intro-progress-bar intro-progress-long" />
         </div>
 
         <button type="button" className="intro-skip-btn" onClick={exitOverlay}>

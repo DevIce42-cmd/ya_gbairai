@@ -15,6 +15,7 @@ function formatPost(post, reactionMap, actor) {
 
   const canManage = Boolean(
     actor?.isAdmin ||
+      (actor?.user && post.userId && actor.user.id === post.userId) ||
       (actor?.guestId && post.authorTokenHash && hashToken(actor.guestId) === post.authorTokenHash)
   );
 
@@ -249,6 +250,7 @@ async function createPost(data, actor) {
       plotTwist: data.plotTwist,
       authorAlias,
       authorTokenHash,
+      userId: actor?.user?.id || null,
       seriesId,
       partNumber,
       readingTimeSec,
@@ -408,6 +410,7 @@ async function addComment(postId, data, actor) {
   const comment = await prisma.comment.create({
     data: {
       postId,
+      userId: actor?.user?.id || null,
       authorAlias: data.authorAlias || generateFunnyAlias(),
       content: data.content,
     },

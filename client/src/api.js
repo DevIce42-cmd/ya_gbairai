@@ -1,5 +1,6 @@
 const GUEST_KEY = 'ya_gbairai_guest_id';
 const ADMIN_KEY_STORAGE = 'ya_gbairai_admin_key';
+const AUTH_TOKEN_KEY = 'ya_gbairai_auth_token';
 
 export function getGuestId() {
   let id = localStorage.getItem(GUEST_KEY);
@@ -19,8 +20,19 @@ export function setSavedAdminKey(key) {
   else sessionStorage.removeItem(ADMIN_KEY_STORAGE);
 }
 
+export function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+}
+
+export function setAuthToken(token) {
+  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+  else localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
 async function request(path, { method = 'GET', body, adminKey } = {}) {
   const headers = { 'X-Guest-Id': getGuestId() };
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   const key = adminKey ?? getSavedAdminKey();
   if (key) headers['X-Admin-Key'] = key;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -45,6 +57,11 @@ async function request(path, { method = 'GET', body, adminKey } = {}) {
 export const api = {
   getMeta: () => request('/meta').then((r) => r.data),
   getAlias: () => request('/alias').then((r) => r.data.alias),
+  trackVisit: (path = '/') =>
+    request('/track', { method: 'POST', body: { path } }).catch(() => null),
+  register: (data) => request('/auth/register', { method: 'POST', body: data }).then((r) => r.data),
+  login: (data) => request('/auth/login', { method: 'POST', body: data }).then((r) => r.data),
+  me: () => request('/auth/me').then((r) => r.data.user),
   listPosts: (params = {}) => {
     const qs = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {

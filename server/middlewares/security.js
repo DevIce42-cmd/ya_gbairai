@@ -10,12 +10,17 @@ function securityAndLogging(req, res, next) {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+  // Prevent stale 304 caching on dynamic API endpoints
+  if (req.originalUrl.startsWith('/api')) {
+    res.setHeader('Cache-Control', 'no-store');
+  }
+
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Guest-Id, X-Admin-Key');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Guest-Id, X-Admin-Key');
   }
 
   if (req.method === 'OPTIONS') {

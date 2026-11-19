@@ -7,6 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  email        String       @unique
+  passwordHash String
+  role         String       @default("USER") // "USER" | "ADMIN"
+  avatarColor  String       @default("#FF6B5B")
+  createdAt    DateTime     @default(now())
+  lastLoginAt  DateTime?
+  lastSeenAt   DateTime     @default(now())
+
+  posts    Post[]
+  comments Comment[]
+  visits   VisitEvent[]
+
+  @@index([createdAt])
+  @@index([lastSeenAt])
+}
+
+model VisitEvent {
+  id         Int      @id @default(autoincrement())
+  sessionKey String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  path       String   @default("/")
+  deviceType String   @default("desktop") // "mobile" | "desktop"
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionKey, createdAt])
+}
+
 model StorySeries {
   id              String   @id @default(cuid())
   title           String
@@ -23,6 +55,8 @@ model Post {
   plotTwist       String?
   authorAlias     String
   authorTokenHash String?
+  userId          String?
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   seriesId        String?
   series          StorySeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   partNumber      Int?
@@ -78,6 +112,8 @@ model Comment {
   id          String   @id @default(cuid())
   postId      String
   post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   authorAlias String
   content     String
   status      String   @default("PUBLISHED") // "PUBLISHED" | "HIDDEN"

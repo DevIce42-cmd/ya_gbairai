@@ -7,12 +7,15 @@ import ReaderModal from './components/ReaderModal';
 import ReportModal from './components/ReportModal';
 import AdminPanel from './components/AdminPanel';
 import IntroOverlay from './components/IntroOverlay';
+import AuthModal from './components/AuthModal';
 
 const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
 
 export default function App() {
   const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SEEN_KEY));
   const [theme, setTheme] = useState(() => localStorage.getItem('ya_gbairai_theme') || 'dark');
+  const [user, setUser] = useState(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [tab, setTab] = useState('ALL');
   const [sort, setSort] = useState('trending');
   const [activeTag, setActiveTag] = useState('');
@@ -99,7 +102,17 @@ export default function App() {
 
   useEffect(() => {
     loadMeta();
+    api.me().then(setUser).catch(() => setUser(null));
+    api.trackVisit('/');
+    const heartbeat = setInterval(() => api.trackVisit(`/${tab.toLowerCase()}`), 180_000);
+    return () => clearInterval(heartbeat);
   }, [loadMeta]);
+
+  useEffect(() => {
+    if (tab !== 'ADMIN') {
+      api.trackVisit(`/${tab.toLowerCase()}`);
+    }
+  }, [tab]);
 
   useEffect(() => {
     loadFeed({ nextPage: 1, append: false });
@@ -111,6 +124,7 @@ export default function App() {
         setComposerState((s) => ({ ...s, open: false }));
         setReaderPostId(null);
         setReportPostId(null);
+        setAuthModalOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -255,6 +269,12 @@ export default function App() {
               aria-label="Changer de thème"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => setAuthModalOpen(true)}
+            >
+              {user ? `👤 ${user.username}` : 'Connexion'}
             </button>
             <button
               className="btn btn-coral btn-sm"
@@ -499,6 +519,21 @@ export default function App() {
         postId={reportPostId}
         reasons={meta.reportReasons}
         onClose={() => setReportPostId(null)}
+        onToast={showToast}
+      />
+
+      <AuthModal
+        open={authModalOpen}
+        user={user}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={(u) => {
+          setUser(u);
+          loadFeed({ nextPage: 1 });
+        }}
+        onLogout={() => {
+          setUser(null);
+          loadFeed({ nextPage: 1 });
+        }}
         onToast={showToast}
       />
 
