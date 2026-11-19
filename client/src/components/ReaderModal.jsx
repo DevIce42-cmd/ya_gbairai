@@ -78,7 +78,7 @@ export default function ReaderModal({
         comments: [...(prev.comments || []), res.comment],
       }));
       setCommentText('');
-      onToast('Commentaire publié 💬');
+      onToast('Ton avis est passé propre ! 💬');
       onCommentAdded?.();
     } catch (err) {
       onToast(err.message, 'error');
@@ -101,17 +101,17 @@ export default function ReaderModal({
             {post ? (
               <>
                 <span className={`badge-type ${post.type}`}>
-                  {isStory ? '📖 Storytime' : '🎭 Confession'}
+                  {isStory ? '📖 Storytime' : '🎭 Gbairai Drôle'}
                 </span>
                 {isStory && post.partNumber && (
-                  <span className="badge-part">Partie {post.partNumber}</span>
+                  <span className="badge-part">Épisode {post.partNumber}</span>
                 )}
                 <span className="meta-subtle">
                   ⏱ {formatReadingTime(post.readingTimeSec)} • 👁 {post.viewsCount} vues
                 </span>
               </>
             ) : (
-              <span className="meta-subtle">Chargement…</span>
+              <span className="meta-subtle">Ça charge le dossier…</span>
             )}
           </div>
           <button className="btn-icon" onClick={onClose} aria-label="Fermer">✕</button>
@@ -122,12 +122,11 @@ export default function ReaderModal({
             <div className="skeleton" />
           ) : (
             <>
-              {/* Suites / Épisodes Storytime */}
               {isStory && post.seriesId && (
                 <div className="series-bar">
                   <div>
                     <div className="meta-subtle" style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      📚 Série Storytime
+                      📚 Tous les épisodes du dossier
                     </div>
                     <div className="series-parts" style={{ marginTop: 6 }}>
                       {(post.seriesParts || []).map((part) => (
@@ -136,7 +135,7 @@ export default function ReaderModal({
                           className={`part-btn ${part.id === post.id ? 'active' : ''}`}
                           onClick={() => part.id !== post.id && onOpenPost(part.id)}
                         >
-                          Partie {part.partNumber}
+                          Épisode {part.partNumber}
                         </button>
                       ))}
                     </div>
@@ -152,7 +151,7 @@ export default function ReaderModal({
                         })
                       }
                     >
-                      + Ajouter Partie {(post.seriesParts?.length || 1) + 1}
+                      + Ajouter Épisode {(post.seriesParts?.length || 1) + 1}
                     </button>
                   )}
                 </div>
@@ -177,7 +176,7 @@ export default function ReaderModal({
                   onClick={() => !twistOpen && setTwistOpen(true)}
                 >
                   <div className="twist-head">
-                    <span>⚡ Plot Twist / Chute secrète</span>
+                    <span>⚡ Le vrai Kpata (Plot Twist)</span>
                     <button
                       type="button"
                       className="twist-toggle"
@@ -186,7 +185,7 @@ export default function ReaderModal({
                         setTwistOpen((v) => !v);
                       }}
                     >
-                      {twistOpen ? 'Masquer' : 'Révéler'}
+                      {twistOpen ? 'Cacher' : 'Voir le kpata'}
                     </button>
                   </div>
                   <p className="twist-text">{post.plotTwist}</p>
@@ -194,7 +193,7 @@ export default function ReaderModal({
               )}
 
               <div className={`card-foot ${post.type}`}>
-                <div className="react-row">
+                <div className="react-row" title="Une seule réaction possible à la fois">
                   {REACTIONS.map((r) => {
                     const active = (post.userReactions || []).includes(r.type);
                     return (
@@ -202,6 +201,7 @@ export default function ReaderModal({
                         key={r.type}
                         className={`react-pill ${active ? 'active' : ''}`}
                         onClick={() => handleReactClick(r.type)}
+                        title={r.label}
                       >
                         <span>{r.emoji}</span>
                         <span>{post.reactions?.[r.type] || 0}</span>
@@ -214,9 +214,8 @@ export default function ReaderModal({
                 </button>
               </div>
 
-              {/* Commentaires */}
               <section className="comments-wrap">
-                <h3 style={{ marginTop: 0 }}>💬 Commentaires ({post.comments?.length || 0})</h3>
+                <h3 style={{ marginTop: 0 }}>💬 Les avis de la famille ({post.comments?.length || 0})</h3>
 
                 <form onSubmit={handleCommentSubmit} style={{ marginBottom: 16 }}>
                   <div className="form-group" style={{ marginBottom: 8 }}>
@@ -224,7 +223,7 @@ export default function ReaderModal({
                       value={commentAlias}
                       onChange={(e) => setCommentAlias(e.target.value)}
                       maxLength={36}
-                      placeholder="Pseudo anonyme (optionnel — généré si vide)"
+                      placeholder="Ton blase (optionnel — on t'en donne un si tu laisses vide)"
                     />
                   </div>
                   <div className="form-group" style={{ marginBottom: 8 }}>
@@ -234,12 +233,12 @@ export default function ReaderModal({
                       maxLength={600}
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Réagis au gbairai avec bienveillance…"
+                      placeholder="Dis ce que tu en penses proprement, sans palabre…"
                     />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" disabled={sendingComment} className="btn btn-indigo btn-sm">
-                      {sendingComment ? 'Envoi…' : 'Commenter'}
+                      {sendingComment ? 'Envoi…' : 'Laisser mon avis'}
                     </button>
                   </div>
                 </form>
@@ -255,7 +254,7 @@ export default function ReaderModal({
                     </div>
                   ))
                 ) : (
-                  <p className="meta-subtle">Aucun commentaire pour l’instant. Lance la discussion !</p>
+                  <p className="meta-subtle">Personne n&apos;a encore parlé ici. Sois le premier à donner ton avis !</p>
                 )}
               </section>
             </>

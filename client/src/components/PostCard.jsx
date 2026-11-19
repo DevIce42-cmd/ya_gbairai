@@ -3,29 +3,39 @@ import { REACTIONS, formatRelativeTime, formatReadingTime, getAvatarBg } from '.
 
 export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, onDelete }) {
   const [twistRevealed, setTwistRevealed] = useState(false);
+  const [burstEmoji, setBurstEmoji] = useState(null);
   const isStory = post.type === 'STORYTIME';
+
+  function handleEmojiClick(type, emoji) {
+    const isAlreadyActive = (post.userReactions || []).includes(type);
+    if (!isAlreadyActive) {
+      setBurstEmoji({ type, emoji, key: Date.now() });
+      setTimeout(() => setBurstEmoji(null), 650);
+    }
+    onReact(post.id, type);
+  }
 
   return (
     <article className={`post-card ${post.type}`}>
       <div className="card-head">
         <div className="badges-row">
           <span className={`badge-type ${post.type}`}>
-            {isStory ? '📖 Storytime' : '🎭 Confession'}
+            {isStory ? '📖 Storytime' : '🎭 Gbairai Drôle'}
           </span>
           {isStory && post.partNumber && (
             <span className="badge-part">
-              Partie {post.partNumber}
+              Épisode {post.partNumber}
               {post.seriesPartsCount > 1 ? ` / ${post.seriesPartsCount}` : ''}
             </span>
           )}
           {isStory && <span className="meta-subtle">⏱ {formatReadingTime(post.readingTimeSec)}</span>}
         </div>
         <div className="badges-row">
-          <button className="btn btn-ghost btn-sm" onClick={() => onReport(post.id)} title="Signaler">
+          <button className="btn btn-ghost btn-sm" onClick={() => onReport(post.id)} title="Signaler ce dossier">
             🚩
           </button>
           {post.canManage && (
-            <button className="btn btn-ghost btn-sm" onClick={() => onDelete(post.id)} title="Supprimer">
+            <button className="btn btn-ghost btn-sm" onClick={() => onDelete(post.id)} title="Effacer mon post">
               🗑️
             </button>
           )}
@@ -57,7 +67,7 @@ export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, 
           onClick={() => !twistRevealed && setTwistRevealed(true)}
         >
           <div className="twist-head">
-            <span>⚡ Plot Twist</span>
+            <span>⚡ Le vrai Kpata (Plot Twist)</span>
             <button
               type="button"
               className="twist-toggle"
@@ -66,7 +76,7 @@ export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, 
                 setTwistRevealed((v) => !v);
               }}
             >
-              {twistRevealed ? 'Masquer' : 'Révéler'}
+              {twistRevealed ? 'Cacher' : 'Voir le kpata'}
             </button>
           </div>
           <p className="twist-text">{post.plotTwist}</p>
@@ -84,16 +94,21 @@ export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, 
       )}
 
       <div className="card-foot">
-        <div className="react-row">
+        <div className="react-row" title="Une seule réaction possible par dossier">
           {REACTIONS.map((r) => {
             const active = (post.userReactions || []).includes(r.type);
             return (
               <button
                 key={r.type}
                 className={`react-pill ${active ? 'active' : ''}`}
-                onClick={() => onReact(post.id, r.type)}
+                onClick={() => handleEmojiClick(r.type, r.emoji)}
                 title={r.label}
               >
+                {burstEmoji?.type === r.type && (
+                  <span key={burstEmoji.key} className="emoji-burst">
+                    {burstEmoji.emoji}
+                  </span>
+                )}
                 <span>{r.emoji}</span>
                 <span>{post.reactions?.[r.type] || 0}</span>
               </button>
@@ -102,7 +117,7 @@ export default function PostCard({ post, onReact, onOpen, onTagClick, onReport, 
         </div>
 
         <button className="read-btn" onClick={() => onOpen(post.id)}>
-          {isStory ? 'Lire la suite' : 'Commenter'} ({post.commentsCount || 0})
+          {isStory ? 'Lire tout le dossier' : 'Gbairai / Avis'} ({post.commentsCount || 0})
         </button>
       </div>
     </article>

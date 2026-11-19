@@ -1,19 +1,19 @@
 export const REACTIONS = [
-  { type: 'LAUGH', emoji: '😂', label: 'MDR' },
-  { type: 'SKULL', emoji: '💀', label: 'J’suis mort' },
-  { type: 'MIND_BLOWN', emoji: '🤯', label: 'Choqué' },
-  { type: 'FIRE', emoji: '🔥', label: 'Croustillant' },
+  { type: 'LAUGH', emoji: '😂', label: "C'est trop doux !" },
+  { type: 'SKULL', emoji: '💀', label: 'Je suis gâté !' },
+  { type: 'MIND_BLOWN', emoji: '🤯', label: 'Ehh Dieu !' },
+  { type: 'FIRE', emoji: '🔥', label: "C'est chaud !" },
 ];
 
 export function formatRelativeTime(iso) {
   const diff = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (diff < 45) return "À l'instant";
+  if (diff < 45) return 'Tout de suite là';
   const mins = Math.floor(diff / 60);
-  if (mins < 60) return `Il y a ${mins} min`;
+  if (mins < 60) return `Y'a ${mins} min`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `Il y a ${hrs} h`;
+  if (hrs < 24) return `Y'a ${hrs} h`;
   const days = Math.floor(hrs / 24);
-  if (days < 30) return `Il y a ${days} j`;
+  if (days < 30) return `Y'a ${days} j`;
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 

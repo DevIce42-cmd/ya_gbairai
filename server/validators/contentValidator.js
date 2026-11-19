@@ -4,16 +4,16 @@ const { normalizeTag } = require('../utils/helpers');
 const VALID_REACTIONS = ['LAUGH', 'SKULL', 'MIND_BLOWN', 'FIRE'];
 
 const SUGGESTED_TAGS = [
-  '#Gênant',
+  '#Gbairai',
+  '#HonteDeBabi',
   '#Karma',
   '#PlotTwist',
-  '#VieQuotidienne',
-  '#Boulot',
-  '#Amour',
+  '#Goumin',
+  '#Taff',
+  '#Maquis',
+  '#Gbaka',
   '#Famille',
-  '#Soirée',
-  '#Voyage',
-  '#Insolite',
+  '#VieDeBabi',
 ];
 
 const VALID_REPORT_REASONS = [

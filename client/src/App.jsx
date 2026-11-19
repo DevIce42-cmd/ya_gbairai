@@ -5,11 +5,15 @@ import ComposerModal from './components/ComposerModal';
 import ReaderModal from './components/ReaderModal';
 import ReportModal from './components/ReportModal';
 import AdminPanel from './components/AdminPanel';
+import IntroOverlay from './components/IntroOverlay';
+
+const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v2';
 
 export default function App() {
+  const [showIntro, setShowIntro] = useState(() => !sessionStorage.getItem(INTRO_SEEN_KEY));
   const [theme, setTheme] = useState(() => localStorage.getItem('ya_gbairai_theme') || 'dark');
-  const [tab, setTab] = useState('ALL'); // ALL | CONFESSION | STORYTIME | ADMIN
-  const [sort, setSort] = useState('trending'); // trending | recent | random
+  const [tab, setTab] = useState('ALL');
+  const [sort, setSort] = useState('trending');
   const [activeTag, setActiveTag] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -22,7 +26,7 @@ export default function App() {
   const [meta, setMeta] = useState({
     stats: { confessions: 0, stories: 0, reactions: 0, comments: 0, views: 0 },
     popularTags: [],
-    suggestedTags: ['#Gênant', '#Karma', '#PlotTwist', '#VieQuotidienne'],
+    suggestedTags: ['#Gbairai', '#HonteDeBabi', '#Karma', '#PlotTwist', '#Goumin', '#Taff'],
     reportReasons: [],
   });
 
@@ -30,6 +34,11 @@ export default function App() {
   const [readerPostId, setReaderPostId] = useState(null);
   const [reportPostId, setReportPostId] = useState(null);
   const [toasts, setToasts] = useState([]);
+
+  const handleIntroFinish = useCallback(() => {
+    sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+    setShowIntro(false);
+  }, []);
 
   const showToast = useCallback((message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -39,13 +48,11 @@ export default function App() {
     }, 3200);
   }, []);
 
-  // Theme sync
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('ya_gbairai_theme', theme);
   }, [theme]);
 
-  // Search debounce
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 280);
     return () => clearTimeout(t);
@@ -93,7 +100,6 @@ export default function App() {
     loadFeed({ nextPage: 1, append: false });
   }, [loadFeed]);
 
-  // Escape closes modals
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -130,11 +136,11 @@ export default function App() {
   }
 
   async function handleDelete(postId) {
-    if (!window.confirm('Supprimer définitivement cette publication ?')) return;
+    if (!window.confirm('Tu veux vraiment gazer ce post définitivement ?')) return;
     try {
       await api.deletePost(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
-      showToast('Publication supprimée.');
+      showToast('Dossier effacé propre !');
       loadMeta();
     } catch (err) {
       showToast(err.message, 'error');
@@ -143,6 +149,8 @@ export default function App() {
 
   return (
     <>
+      <IntroOverlay visible={showIntro} onFinish={handleIntroFinish} />
+
       <div className="ambient-bg" aria-hidden="true">
         <div className="orb orb-1" />
         <div className="orb orb-2" />
@@ -165,16 +173,16 @@ export default function App() {
               <span className="brand-title">
                 Y&apos;A <span className="accent">GBAIRAI !</span>
               </span>
-              <span className="brand-sub">Confessions &amp; Storytimes</span>
+              <span className="brand-sub">Les vrais dossiers de Babi</span>
             </span>
           </button>
 
           <nav className="nav-pills" aria-label="Navigation principale">
             <button className={`nav-pill ${tab === 'ALL' ? 'active' : ''}`} onClick={() => setTab('ALL')}>
-              <span className="dot dot-all" /> Tout
+              <span className="dot dot-all" /> Tout le mouvement
             </button>
             <button className={`nav-pill ${tab === 'CONFESSION' ? 'active' : ''}`} onClick={() => setTab('CONFESSION')}>
-              <span className="dot dot-conf" /> Confessions
+              <span className="dot dot-conf" /> Gbairai Drôles
             </button>
             <button className={`nav-pill ${tab === 'STORYTIME' ? 'active' : ''}`} onClick={() => setTab('STORYTIME')}>
               <span className="dot dot-story" /> Storytime
@@ -187,8 +195,16 @@ export default function App() {
           <div className="nav-actions">
             <button
               className="btn-icon"
+              onClick={() => setShowIntro(true)}
+              title="Rejouer l'animation d'entrée"
+              aria-label="Rejouer l'intro"
+            >
+              ✨
+            </button>
+            <button
+              className="btn-icon"
               onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
-              title="Basculer Dark / Light Mode"
+              title="Changer de mode (Nuit / Jour)"
               aria-label="Changer de thème"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
@@ -197,7 +213,7 @@ export default function App() {
               className="btn btn-coral btn-sm"
               onClick={() => setComposerState({ open: true, type: tab === 'STORYTIME' ? 'STORYTIME' : 'CONFESSION', sequelSeries: null })}
             >
-              + Publier
+              + Verser
             </button>
           </div>
         </div>
@@ -219,21 +235,21 @@ export default function App() {
               <div>
                 <div className="hero-eyebrow">
                   <span className="live-dot" />
-                  <span>Confidences tard le soir • 100% Anonyme • Zéro compte requis</span>
+                  <span>Gbangban tard le soir • 100% En Scred • Zéro compte</span>
                 </div>
                 <h1>
-                  Balance ta <span className="text-coral">confession drôle</span> ou raconte ton meilleur{' '}
+                  Viens verser ton <span className="text-coral">gbairai drôle</span> ou raconte ton meilleur{' '}
                   <span className="text-indigo">Storytime</span>.
                 </h1>
                 <p className="hero-desc">
-                  Sur <strong>Y&apos;A GBAIRAI !</strong>, les gaffes deviennent des légendes et les histoires vraies se lisent en épisodes (Partie 1, Partie 2…). Pseudo anonyme généré en un clic.
+                  Ici sur <strong>Y&apos;A GBAIRAI !</strong>, on dit la vérité sans montrer son visage. Tes gaffes, tes goumins et tes dossiers chauds se lisent en épisodes (Partie 1, Partie 2…). On te donne un blase anonyme en un clic !
                 </p>
                 <div className="hero-cta">
                   <button
                     className="btn btn-coral btn-lg"
                     onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
                   >
-                    🎭 Confesser un secret
+                    🎭 Verser un gbairai
                   </button>
                   <button
                     className="btn btn-indigo btn-lg"
@@ -246,13 +262,13 @@ export default function App() {
 
               <div className="stats-panel">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ fontSize: '0.86rem' }}>En direct ce soir</strong>
-                  <span className="badge-type CONFESSION">LIVE</span>
+                  <strong style={{ fontSize: '0.86rem' }}>Le mouvement en direct</strong>
+                  <span className="badge-type CONFESSION">EN FEU</span>
                 </div>
                 <div className="stats-grid">
                   <div className="stat-box">
                     <span className="stat-val text-coral">{meta.stats.confessions}</span>
-                    <span className="stat-lbl">Confessions</span>
+                    <span className="stat-lbl">Gbairais</span>
                   </div>
                   <div className="stat-box">
                     <span className="stat-val text-indigo">{meta.stats.stories}</span>
@@ -264,7 +280,7 @@ export default function App() {
                   </div>
                   <div className="stat-box">
                     <span className="stat-val text-violet">{meta.stats.comments}</span>
-                    <span className="stat-lbl">Commentaires</span>
+                    <span className="stat-lbl">Avis</span>
                   </div>
                 </div>
               </div>
@@ -278,16 +294,16 @@ export default function App() {
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un gbairai, un plot twist, un pseudo…"
+                  placeholder="Fouiller un gbairai, un kpata, un blase…"
                 />
               </div>
 
               <div className="sort-group">
                 <button className={`sort-btn ${sort === 'trending' ? 'active' : ''}`} onClick={() => setSort('trending')}>
-                  🔥 Tendances
+                  🔥 En feu
                 </button>
                 <button className={`sort-btn ${sort === 'recent' ? 'active' : ''}`} onClick={() => setSort('recent')}>
-                  ⚡ Récents
+                  ⚡ Frais du jour
                 </button>
                 <button
                   className={`sort-btn ${sort === 'random' ? 'active' : ''}`}
@@ -296,26 +312,28 @@ export default function App() {
                     else setSort('random');
                   }}
                 >
-                  🎲 Aléatoire
+                  🎲 Au hasard
                 </button>
               </div>
             </section>
 
             {/* Tags Bar */}
-            <div className="tags-bar">
-              <button className={`tag-chip ${activeTag === '' ? 'active' : ''}`} onClick={() => setActiveTag('')}>
-                Tous les tags
-              </button>
-              {meta.popularTags.map((t) => (
-                <button
-                  key={t.slug}
-                  className={`tag-chip ${activeTag === t.slug ? 'active' : ''}`}
-                  onClick={() => setActiveTag((cur) => (cur === t.slug ? '' : t.slug))}
-                >
-                  {t.name} ({t.count})
+            {meta.popularTags.length > 0 && (
+              <div className="tags-bar">
+                <button className={`tag-chip ${activeTag === '' ? 'active' : ''}`} onClick={() => setActiveTag('')}>
+                  Tous les tags
                 </button>
-              ))}
-            </div>
+                {meta.popularTags.map((t) => (
+                  <button
+                    key={t.slug}
+                    className={`tag-chip ${activeTag === t.slug ? 'active' : ''}`}
+                    onClick={() => setActiveTag((cur) => (cur === t.slug ? '' : t.slug))}
+                  >
+                    {t.name} ({t.count})
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Feed */}
             {loading ? (
@@ -325,18 +343,28 @@ export default function App() {
                 ))}
               </div>
             ) : posts.length === 0 ? (
-              <div className="admin-card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-                <div style={{ fontSize: '2.6rem', marginBottom: 8 }}>🫣</div>
-                <h3 style={{ margin: '0 0 8px' }}>Aucun gbairai trouvé ici</h3>
-                <p className="meta-subtle" style={{ marginBottom: 16 }}>
-                  Changez de filtre ou soyez le premier à lancer l&apos;ambiance !
+              <div className="empty-hero-card">
+                <div style={{ fontSize: '3.2rem', marginBottom: 10 }}>🔥</div>
+                <h3 style={{ margin: '0 0 8px', fontSize: '1.35rem' }}>
+                  Le maquis est encore calme ici !
+                </h3>
+                <p className="meta-subtle" style={{ marginBottom: 20, maxWidth: '46ch', marginInline: 'auto', fontSize: '0.92rem' }}>
+                  Aucun faux bot ici : que du 100% réel ! Sois le premier à mettre le feu en versant ton premier gbairai anonyme ou ton Storytime.
                 </p>
-                <button
-                  className="btn btn-coral"
-                  onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
-                >
-                  Publier maintenant
-                </button>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-coral"
+                    onClick={() => setComposerState({ open: true, type: 'CONFESSION', sequelSeries: null })}
+                  >
+                    🎭 Verser le 1er gbairai
+                  </button>
+                  <button
+                    className="btn btn-indigo"
+                    onClick={() => setComposerState({ open: true, type: 'STORYTIME', sequelSeries: null })}
+                  >
+                    📖 Lancer le 1er Storytime
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -357,7 +385,7 @@ export default function App() {
                 {hasMore && (
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: 26 }}>
                     <button className="btn btn-outline" onClick={() => loadFeed({ nextPage: page + 1, append: true })}>
-                      Charger plus de gbairais
+                      Voir plus de gbairais
                     </button>
                   </div>
                 )}
@@ -375,7 +403,7 @@ export default function App() {
         </button>
         <button className={`mobile-nav-btn ${tab === 'CONFESSION' ? 'active' : ''}`} onClick={() => setTab('CONFESSION')}>
           <span>🎭</span>
-          <span>Confessions</span>
+          <span>Gbairai</span>
         </button>
         <button className={`mobile-nav-btn ${tab === 'STORYTIME' ? 'active' : ''}`} onClick={() => setTab('STORYTIME')}>
           <span>📖</span>

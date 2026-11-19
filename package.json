@@ -8,9 +8,9 @@
   },
   "scripts": {
     "build": "npx prisma generate && vite build",
-    "build:render": "npm install --include=dev && npx prisma generate && npx prisma db push && npm run db:seed && vite build",
-    "start": "npx prisma db push --skip-generate && npm run db:seed && node server/index.js",
-    "start:prod": "npx prisma db push --skip-generate && npm run db:seed && node server/index.js",
+    "build:render": "npm install --include=dev && npx prisma generate && npx prisma db push && vite build",
+    "start": "npx prisma db push --skip-generate && node prisma/clean-bots.js && node server/index.js",
+    "start:prod": "npx prisma db push --skip-generate && node prisma/clean-bots.js && node server/index.js",
     "dev:server": "node --watch server/index.js",
     "dev:client": "vite",
     "db:generate": "prisma generate",

@@ -344,26 +344,30 @@ async function toggleReaction(postId, type, actor) {
   const post = await prisma.post.findFirst({ where: { id: postId, status: 'PUBLISHED' } });
   if (!post) throw new AppError('Publication introuvable.', 404, 'POST_NOT_FOUND');
 
-  const existing = await prisma.reaction.findUnique({
-    where: {
-      postId_actorKey_type: {
-        postId,
-        actorKey: actor.actorKey,
-        type,
-      },
-    },
-  });
+  // Exclusive single reaction per user per post:
+  // clicking the same emoji removes it; clicking another replaces the previous one.
+  const active = await prisma.$transaction(async (tx) => {
+    const existingAll = await tx.reaction.findMany({
+      where: { postId, actorKey: actor.actorKey },
+    });
 
-  let active;
-  if (existing) {
-    await prisma.reaction.delete({ where: { id: existing.id } });
-    active = false;
-  } else {
-    await prisma.reaction.create({
+    const hadSame = existingAll.some((r) => r.type === type);
+
+    if (existingAll.length > 0) {
+      await tx.reaction.deleteMany({
+        where: { postId, actorKey: actor.actorKey },
+      });
+    }
+
+    if (hadSame) {
+      return false;
+    }
+
+    await tx.reaction.create({
       data: { postId, actorKey: actor.actorKey, type },
     });
-    active = true;
-  }
+    return true;
+  });
 
   const totalReactions = await prisma.reaction.count({ where: { postId } });
   const hotScore = computeHotScore({

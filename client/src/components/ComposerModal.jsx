@@ -4,7 +4,7 @@ import { api } from '../api';
 export default function ComposerModal({
   open,
   defaultType = 'CONFESSION',
-  sequelSeries = null, // { id, title, nextPart }
+  sequelSeries = null,
   suggestedTags = [],
   onClose,
   onSuccess,
@@ -31,7 +31,7 @@ export default function ComposerModal({
     setSelectedTags([]);
     setCustomTag('');
     if (!sequelSeries) {
-      api.getAlias().then(setAuthorAlias).catch(() => setAuthorAlias('RenardMasqué42'));
+      api.getAlias().then(setAuthorAlias).catch(() => setAuthorAlias('GarbaFurtif225'));
     }
   }, [open, defaultType, sequelSeries]);
 
@@ -50,7 +50,7 @@ export default function ComposerModal({
       const alias = await api.getAlias();
       setAuthorAlias(alias);
     } catch {
-      onToast('Impossible de générer un pseudo.', 'error');
+      onToast('Impossible de générer un blase.', 'error');
     }
   }
 
@@ -64,7 +64,7 @@ export default function ComposerModal({
           content: content.trim(),
           plotTwist: plotTwist.trim(),
         });
-        onToast(`Partie ${part.partNumber} publiée avec succès ! 📖`);
+        onToast(`Épisode ${part.partNumber} versé dans le mouvement ! 📖🔥`);
         onSuccess(part);
       } else {
         const allTags = [...selectedTags];
@@ -78,9 +78,9 @@ export default function ComposerModal({
           tags: allTags,
         });
         if (res.flaggedForReview) {
-          onToast('Publication envoyée en vérification modération.', 'error');
+          onToast('Ton dossier passe vite fait en vérif modération.', 'error');
         } else {
-          onToast(type === 'STORYTIME' ? 'Storytime publié ! 📖' : 'Confession balancée anonymement ! 🎭');
+          onToast(type === 'STORYTIME' ? 'Ton Storytime est en feu ! 📖🔥' : 'Ton gbairai est sorti en scred ! 🎭🔥');
         }
         onSuccess(res.data);
       }
@@ -100,8 +100,8 @@ export default function ComposerModal({
         <div className="modal-header">
           <h2>
             {isSequel
-              ? `Ajouter la Partie ${sequelSeries.nextPart}`
-              : "Balance ton gbairai sur Y'A GBAIRAI !"}
+              ? `Balance l'Épisode ${sequelSeries.nextPart} !`
+              : "Verse ton gbairai sur Y'A GBAIRAI !"}
           </h2>
           <button className="btn-icon" onClick={onClose} aria-label="Fermer">✕</button>
         </div>
@@ -116,8 +116,8 @@ export default function ComposerModal({
               >
                 <span style={{ fontSize: '1.5rem' }}>🎭</span>
                 <div>
-                  <strong>Confession Drôle</strong>
-                  <small>Courte, punchy, 100% anonyme</small>
+                  <strong>Gbairai Drôle</strong>
+                  <small>Court, pimenté, 100% en scred</small>
                 </div>
               </button>
               <button
@@ -127,8 +127,8 @@ export default function ComposerModal({
               >
                 <span style={{ fontSize: '1.5rem' }}>📖</span>
                 <div>
-                  <strong>Storytime</strong>
-                  <small>Récit immersif + suites (Partie 2…)</small>
+                  <strong>Storytime (Épisodes)</strong>
+                  <small>Long dossier + suites (Partie 2…)</small>
                 </div>
               </button>
             </div>
@@ -136,15 +136,15 @@ export default function ComposerModal({
 
           {!isSequel && (
             <div className="form-group">
-              <label>Pseudo anonyme</label>
+              <label>Ton blase anonyme (personne ne te connaît)</label>
               <div className="alias-row">
                 <input
                   value={authorAlias}
                   onChange={(e) => setAuthorAlias(e.target.value)}
                   maxLength={36}
-                  placeholder="Ex: RenardMasqué42"
+                  placeholder="Ex: GarbaFurtif225"
                 />
-                <button type="button" className="btn btn-outline" onClick={rollAlias} title="Nouveau pseudo">
+                <button type="button" className="btn btn-outline" onClick={rollAlias} title="Changer de blase">
                   🎲
                 </button>
               </div>
@@ -153,7 +153,7 @@ export default function ComposerModal({
 
           <div className="form-group">
             <label>
-              {isStory ? 'Titre du Storytime (obligatoire)' : 'Titre accrocheur (optionnel)'}
+              {isStory ? 'Titre du Storytime (obligatoire)' : 'Petit titre (optionnel)'}
             </label>
             <input
               value={title}
@@ -162,15 +162,15 @@ export default function ComposerModal({
               maxLength={120}
               placeholder={
                 isStory
-                  ? "Ex: Le jour où j'ai fini invité d'honneur par erreur…"
-                  : 'Ex: Le micro resté allumé en visio…'
+                  ? "Ex: Le jour où mon gbaka m'a déposé au mariage d'un inconnu…"
+                  : 'Ex: La honte que j’ai prise devant mon boss…'
               }
             />
           </div>
 
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <label>{isStory ? 'Ton récit (80 à 9000 caractères)' : 'Ta confession (15 à 1200 caractères)'}</label>
+              <label>{isStory ? 'Raconte tout le dossier (80 à 9000 car.)' : 'Verse ton gbairai (15 à 1200 car.)'}</label>
               <span className="meta-subtle">{content.length} / {maxLen}</span>
             </div>
             <textarea
@@ -179,24 +179,24 @@ export default function ComposerModal({
               required
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Raconte sans filtres (les e-mails et numéros de téléphone sont bloqués automatiquement)…"
+              placeholder="Parle vrai, sans citer de vrais numéros ni d'e-mails (bloqués automatiquement pour ta sécurité)…"
             />
           </div>
 
           <div className="form-group">
-            <label>⚡ Plot Twist / Chute secrète (optionnel — flouté jusqu’au clic)</label>
+            <label>⚡ Le vrai Kpata / Plot Twist (optionnel — flouté jusqu’au clic)</label>
             <textarea
               rows={2}
               maxLength={600}
               value={plotTwist}
               onChange={(e) => setPlotTwist(e.target.value)}
-              placeholder="Ajoute un rebondissement final que les lecteurs révèleront en cliquant…"
+              placeholder="Garde la chute finale cachée pour surprendre tout le monde…"
             />
           </div>
 
           {!isSequel && (
             <div className="form-group">
-              <label>Tags (jusqu’à 4)</label>
+              <label>Tags du mouvement (jusqu’à 4)</label>
               <div className="tags-bar" style={{ marginBottom: 8 }}>
                 {suggestedTags.map((tag) => (
                   <button
@@ -213,17 +213,17 @@ export default function ComposerModal({
                 value={customTag}
                 onChange={(e) => setCustomTag(e.target.value)}
                 maxLength={24}
-                placeholder="Ou ajoute un tag perso (ex: #Abidjan, #Transport)…"
+                placeholder="Ou écris ton propre tag (ex: #Yopougon, #Cocody, #Dja)…"
               />
             </div>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span className="meta-subtle">🔒 Zéro compte requis • Anti-XSS &amp; Anti-doxxing actifs</span>
+            <span className="meta-subtle">🔒 100% en scred • Zéro compte • Zéro djê</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn btn-ghost" onClick={onClose}>Annuler</button>
+              <button type="button" className="btn btn-ghost" onClick={onClose}>Laisser tomber</button>
               <button type="submit" disabled={submitting} className={`btn ${isStory ? 'btn-indigo' : 'btn-coral'}`}>
-                {submitting ? 'Publication…' : isSequel ? 'Publier la suite' : 'Publier'}
+                {submitting ? 'Envoi en cours…' : isSequel ? 'Verser la suite' : 'Balancer le gbairai'}
               </button>
             </div>
           </div>

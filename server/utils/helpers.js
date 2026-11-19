@@ -1,48 +1,48 @@
 const crypto = require('node:crypto');
 
-const ANIMALS_OBJECTS = [
+const IVORIAN_NOUNS = [
+  'Garba',
+  'Alloco',
+  'Gbaka',
+  'Attiéké',
+  'WôrôWôrô',
+  'Babi',
+  'Maquis',
+  'Choukouya',
+  'Kédjénou',
+  'Gombo',
+  'Tantie',
+  'Tonton',
   'Renard',
   'Pigeon',
-  'Lama',
-  'Croissant',
-  'Hibou',
-  'Ninja',
-  'Koala',
-  'Tacos',
-  'Panthère',
-  'Raton',
-  'Pingouin',
-  'Cactus',
-  'Baguette',
   'Fantôme',
-  'Canard',
-  'Poulpe',
+  'Ninja',
   'Corbeau',
-  'Singe',
+  'Panthère',
 ];
 
-const ADJECTIVES = [
-  'Masqué',
+const IVORIAN_ADJECTIVES = [
   'Furtif',
-  'Suspect',
+  'Masqué',
+  'Turbo',
   'Malin',
   'Nocturne',
   'Bavard',
-  'Cosmique',
+  'Suspect',
   'Discret',
   'Légendaire',
-  'Turbo',
+  'Pimenté',
+  'Chaud',
   'Tactique',
-  'Solaire',
-  'Rebelle',
-  'Croustillant',
   'Curieux',
+  'Cosmique',
+  'Rebelle',
   'Dramatique',
 ];
 
 function generateFunnyAlias() {
-  const first = ANIMALS_OBJECTS[Math.floor(Math.random() * ANIMALS_OBJECTS.length)];
-  const second = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const first = IVORIAN_NOUNS[Math.floor(Math.random() * IVORIAN_NOUNS.length)];
+  const second = IVORIAN_ADJECTIVES[Math.floor(Math.random() * IVORIAN_ADJECTIVES.length)];
   const num = Math.floor(10 + Math.random() * 90);
   return `${first}${second}${num}`;
 }
