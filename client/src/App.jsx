@@ -13,6 +13,10 @@ import RouletteModal from './components/RouletteModal';
 
 const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
 const SAVED_POSTS_KEY = 'ya_gbairai_saved_posts';
+const ANDROID_APK_URL =
+  'https://github.com/DevIce42-cmd/ya_gbairai/releases/latest/download/ya-gbairai-android.apk';
+const IS_ANDROID_APP =
+  typeof navigator !== 'undefined' && navigator.userAgent.includes('YaGbairaiAndroid');
 
 function getInitialPostFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -456,6 +460,17 @@ export default function App() {
                   <button className="btn btn-outline btn-lg" onClick={() => setRouletteOpen(true)}>
                     🎲 Roulette
                   </button>
+                  {!IS_ANDROID_APP && (
+                    <a
+                      className="btn btn-outline btn-lg"
+                      href={ANDROID_APK_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      🤖 App Android (.apk)
+                    </a>
+                  )}
                 </div>
               </div>
 
