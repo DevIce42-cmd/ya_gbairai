@@ -226,6 +226,14 @@ export function initButtonFX() {
     const button = e.target?.closest?.(BUTTON_SELECTOR);
     if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
 
+    // Clear magnetic hover offset before press bounce so transforms don't fight
+    if (activeMagnetic === button) {
+      button.style.removeProperty('--mag-x');
+      button.style.removeProperty('--mag-y');
+      button.classList.remove('fx-magnetic-active');
+      activeMagnetic = null;
+    }
+
     const isCta = button.matches('.btn-coral, .btn-indigo, .mobile-fab, .figma-3d-card, .figma-animated-stats-card');
     const isReact = button.matches('.react-pill, .poll-opt, .btn-whatsapp');
 

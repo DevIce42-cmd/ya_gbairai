@@ -13,9 +13,20 @@ import IntroOverlay from './components/IntroOverlay';
 import AuthModal from './components/AuthModal';
 import RouletteModal from './components/RouletteModal';
 import FigmaStudioShowcase from './components/FigmaStudioShowcase';
+import OnboardingModal from './components/OnboardingModal';
 
 const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
+const ONBOARDED_KEY = 'ya_gbairai_onboarded_v1';
 const SAVED_POSTS_KEY = 'ya_gbairai_saved_posts';
+
+function safeGetStorage(storage, key, fallback = null) {
+  try {
+    const val = storage.getItem(key);
+    return val === null ? fallback : val;
+  } catch {
+    return fallback;
+  }
+}
 const ANDROID_APK_URL =
   'https://github.com/DevIce42-cmd/ya_gbairai/releases/latest/download/ya-gbairai-android.apk';
 const IS_ANDROID_APP =
@@ -29,9 +40,12 @@ function getInitialPostFromUrl() {
 export default function App() {
   const initialSharedPost = getInitialPostFromUrl();
   const [showIntro, setShowIntro] = useState(
-    () => !initialSharedPost && !sessionStorage.getItem(INTRO_SEEN_KEY)
+    () => !initialSharedPost && !safeGetStorage(sessionStorage, INTRO_SEEN_KEY)
   );
-  const [theme, setTheme] = useState(() => localStorage.getItem('ya_gbairai_theme') || 'dark');
+  const [needsOnboarding, setNeedsOnboarding] = useState(
+    () => !initialSharedPost && !safeGetStorage(localStorage, ONBOARDED_KEY)
+  );
+  const [theme, setTheme] = useState(() => safeGetStorage(localStorage, 'ya_gbairai_theme', 'dark'));
   const [sfxEnabled, setSfxEnabled] = useState(() => isSoundEnabled());
   const [user, setUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -85,8 +99,21 @@ export default function App() {
   const todayPrompt = getTodayPrompt();
 
   const handleIntroFinish = useCallback(() => {
-    sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+    try {
+      sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+    } catch {
+      // ignore storage errors
+    }
     setShowIntro(false);
+  }, []);
+
+  const handleOnboardingComplete = useCallback(() => {
+    try {
+      localStorage.setItem(ONBOARDED_KEY, '1');
+    } catch {
+      // ignore storage errors
+    }
+    setNeedsOnboarding(false);
   }, []);
 
   const showToast = useCallback((message, type = 'success') => {
@@ -234,13 +261,38 @@ export default function App() {
     [tab, activeTag, debouncedSearch, sort, showToast]
   );
 
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
+
   useEffect(() => {
     loadMeta();
     api.me().then(setUser).catch(() => setUser(null));
     api.trackVisit('/');
-    const heartbeat = setInterval(() => api.trackVisit(`/${tab.toLowerCase()}`), 180_000);
+    const heartbeat = setInterval(() => api.trackVisit(`/${tabRef.current.toLowerCase()}`), 180_000);
     return () => clearInterval(heartbeat);
   }, [loadMeta]);
+
+  const showOnboarding = !showIntro && needsOnboarding;
+  const anyOverlayOpen = Boolean(
+    showIntro ||
+    showOnboarding ||
+    composerState.open ||
+    readerPostId ||
+    reportPostId ||
+    authModalOpen ||
+    rouletteOpen
+  );
+
+  // Sync body scroll lock & Android SwipeRefreshLayout when any overlay/modal is open
+  useEffect(() => {
+    if (window.YaGbairaiNative?.setSwipeRefreshEnabled) {
+      try {
+        window.YaGbairaiNative.setSwipeRefreshEnabled(!anyOverlayOpen);
+      } catch {
+        // ignore bridge error
+      }
+    }
+  }, [anyOverlayOpen]);
 
   useEffect(() => {
     if (tab !== 'ADMIN') {
@@ -274,16 +326,14 @@ export default function App() {
       } else if (
         (e.key === 'n' || e.key === 'N') &&
         !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) &&
-        !readerPostId &&
-        !authModalOpen &&
-        !rouletteOpen
+        !anyOverlayOpen
       ) {
         setComposerState({ open: true, type: 'CONFESSION', initialTag: '', initialHint: '', sequelSeries: null });
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [closePost, readerPostId, authModalOpen, rouletteOpen]);
+  }, [closePost, anyOverlayOpen]);
 
   useEffect(() => {
     const onMove = (e) => {
@@ -915,6 +965,18 @@ export default function App() {
           setUser(null);
           loadFeed({ nextPage: 1 });
         }}
+        onToast={showToast}
+      />
+
+      <OnboardingModal
+        open={showOnboarding}
+        user={user}
+        onComplete={handleOnboardingComplete}
+        onAuthSuccess={(u) => {
+          setUser(u);
+          loadFeed({ nextPage: 1 });
+        }}
+        onSoundChange={(enabled) => setSfxEnabled(enabled)}
         onToast={showToast}
       />
 
