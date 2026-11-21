@@ -2,7 +2,7 @@ const { prisma } = require('../db/prisma');
 const { hashPassword, verifyPassword, signToken } = require('../utils/authToken');
 const { AppError } = require('../middlewares/errorHandler');
 
-const AVATAR_COLORS = ['#FF6B5B', '#FFB547', '#6366F1', '#A855F7', '#EC4899', '#14B8A6'];
+const AVATAR_COLORS = ['#25D366', '#00A884', '#128C7E', '#075E54', '#16A34A', '#1F2C34'];
 
 // In-memory throttle to avoid spamming VisitEvent rows within 60s for the same session+path
 const recentVisits = new Map();

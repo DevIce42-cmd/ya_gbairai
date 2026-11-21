@@ -47,7 +47,7 @@ export default function AuthModal({ open, user, onClose, onAuthSuccess, onLogout
           {user ? (
             <div>
               <div className="author-row" style={{ marginBottom: 14 }}>
-                <span className="avatar-circle" style={{ background: user.avatarColor || '#FF6B5B', width: 42, height: 42, fontSize: '1rem' }}>
+                <span className="avatar-circle" style={{ background: user.avatarColor || '#00A884', width: 42, height: 42, fontSize: '1rem' }}>
                   {user.username.slice(0, 2).toUpperCase()}
                 </span>
                 <div>

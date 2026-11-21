@@ -52,34 +52,34 @@ export async function generateAndShareStoryCard(post) {
 
   const isStory = post.type === 'STORYTIME';
 
-  // 1. Background
+  // 1. Background — WhatsApp Obsidian Black & Deep Emerald
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#0B0912');
-  bg.addColorStop(0.5, isStory ? '#14112E' : '#1E1122');
-  bg.addColorStop(1, '#0B0912');
+  bg.addColorStop(0, '#0B141A');
+  bg.addColorStop(0.5, isStory ? '#0B201C' : '#0E2419');
+  bg.addColorStop(1, '#050A0D');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
   // Ambient Orbs
   const orb1 = ctx.createRadialGradient(180, 280, 20, 180, 280, 520);
-  orb1.addColorStop(0, isStory ? 'rgba(99, 102, 241, 0.38)' : 'rgba(255, 107, 91, 0.42)');
+  orb1.addColorStop(0, isStory ? 'rgba(0, 168, 132, 0.36)' : 'rgba(37, 211, 102, 0.38)');
   orb1.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = orb1;
   ctx.fillRect(0, 0, W, H);
 
   const orb2 = ctx.createRadialGradient(900, 1620, 20, 900, 1620, 540);
-  orb2.addColorStop(0, isStory ? 'rgba(168, 85, 247, 0.35)' : 'rgba(255, 181, 71, 0.32)');
+  orb2.addColorStop(0, isStory ? 'rgba(18, 140, 126, 0.34)' : 'rgba(83, 235, 141, 0.28)');
   orb2.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = orb2;
   ctx.fillRect(0, 0, W, H);
 
   // 2. Top Brand Header
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = '#E9EDEF';
   ctx.font = '800 58px "Plus Jakarta Sans", sans-serif';
   ctx.fillText("🔥 Y'A GBAIRAI !", W / 2, 190);
 
-  ctx.fillStyle = '#B5AED0';
+  ctx.fillStyle = '#8696A0';
   ctx.font = '700 28px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('100% ANONYME  •  LES VRAIS DOSSIERS DE BABI', W / 2, 245);
 
@@ -90,33 +90,33 @@ export async function generateAndShareStoryCard(post) {
   const cardH = 1220;
 
   drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 44);
-  ctx.fillStyle = 'rgba(23, 19, 37, 0.92)';
+  ctx.fillStyle = 'rgba(17, 27, 33, 0.94)';
   ctx.fill();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = isStory ? 'rgba(99, 102, 241, 0.55)' : 'rgba(255, 107, 91, 0.55)';
+  ctx.strokeStyle = isStory ? 'rgba(0, 168, 132, 0.58)' : 'rgba(37, 211, 102, 0.58)';
   ctx.stroke();
 
   // Top Accent Bar inside card
   const barGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
   if (isStory) {
-    barGrad.addColorStop(0, '#6366F1');
-    barGrad.addColorStop(1, '#A855F7');
+    barGrad.addColorStop(0, '#075E54');
+    barGrad.addColorStop(1, '#00A884');
   } else {
-    barGrad.addColorStop(0, '#FF6B5B');
-    barGrad.addColorStop(1, '#FFB547');
+    barGrad.addColorStop(0, '#25D366');
+    barGrad.addColorStop(1, '#128C7E');
   }
   drawRoundedRect(ctx, cardX + 48, cardY + 50, 290, 56, 28);
   ctx.fillStyle = barGrad;
   ctx.fill();
 
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = isStory ? '#FFFFFF' : '#06130B';
   ctx.font = '800 26px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(isStory ? '📖 STORYTIME' : '🎭 GBAIRAI DRÔLE', cardX + 193, cardY + 87);
 
   // Author alias
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#ABA4C2';
+  ctx.fillStyle = '#8696A0';
   ctx.font = '700 30px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(`Par ${post.authorAlias}`, cardX + 54, cardY + 170);
 
@@ -124,7 +124,7 @@ export async function generateAndShareStoryCard(post) {
 
   // Title
   if (post.title) {
-    ctx.fillStyle = '#FFFFFF';
+    ctx.fillStyle = '#E9EDEF';
     ctx.font = '800 46px "Plus Jakarta Sans", sans-serif';
     const titleLines = wrapText(ctx, post.title, cardW - 108, 3);
     for (const line of titleLines) {
@@ -135,7 +135,7 @@ export async function generateAndShareStoryCard(post) {
   }
 
   // Body content
-  ctx.fillStyle = '#F2EEFF';
+  ctx.fillStyle = '#E9EDEF';
   ctx.font = '500 38px "Plus Jakarta Sans", sans-serif';
   const bodyLines = wrapText(ctx, post.content, cardW - 108, post.title ? 12 : 15);
   for (const line of bodyLines) {
@@ -144,7 +144,7 @@ export async function generateAndShareStoryCard(post) {
   }
 
   // Reactions footer inside card
-  ctx.fillStyle = '#FFB547';
+  ctx.fillStyle = '#25D366';
   ctx.font = '700 30px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(
     `😂 ${post.reactions?.LAUGH || 0}   💀 ${post.reactions?.SKULL || 0}   🤯 ${post.reactions?.MIND_BLOWN || 0}   🔥 ${post.reactions?.FIRE || 0}`,
@@ -154,11 +154,11 @@ export async function generateAndShareStoryCard(post) {
 
   // 4. Bottom CTA Footer
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = '#E9EDEF';
   ctx.font = '700 32px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('Lis la suite & verse ton gbairai sur :', W / 2, 1675);
 
-  ctx.fillStyle = '#FFB547';
+  ctx.fillStyle = '#25D366';
   ctx.font = '800 30px "Plus Jakarta Sans", sans-serif';
   ctx.fillText('ya-gbairai-web-production.up.railway.app', W / 2, 1735);
 

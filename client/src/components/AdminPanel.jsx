@@ -260,7 +260,7 @@ export default function AdminPanel({ onToast, onModerationChange }) {
                   <tr key={u.id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className="avatar-circle" style={{ background: u.avatarColor || '#FF6B5B', width: 26, height: 26, fontSize: '0.7rem' }}>
+                        <span className="avatar-circle" style={{ background: u.avatarColor || '#00A884', width: 26, height: 26, fontSize: '0.7rem' }}>
                           {u.username.slice(0, 2).toUpperCase()}
                         </span>
                         <strong>{u.username}</strong>

@@ -23,7 +23,7 @@ export function formatReadingTime(sec = 30) {
 }
 
 export function getAvatarBg(alias = '') {
-  const colors = ['#FF6B5B', '#FFB547', '#6366F1', '#A855F7', '#EC4899', '#14B8A6'];
+  const colors = ['#25D366', '#00A884', '#128C7E', '#075E54', '#16A34A', '#1F2C34'];
   let h = 0;
   for (let i = 0; i < alias.length; i += 1) h = (h * 31 + alias.charCodeAt(i)) % 997;
   return colors[Math.abs(h) % colors.length];

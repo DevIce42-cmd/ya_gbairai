@@ -64,7 +64,7 @@ export function shareOnWhatsApp(post) {
 }
 
 export function launchConfettiBurst() {
-  const colors = ['#FF6B5B', '#FFB547', '#6366F1', '#A855F7', '#4ADE80'];
+  const colors = ['#25D366', '#00A884', '#53EB8D', '#D9FDD3', '#128C7E'];
   const container = document.createElement('div');
   container.className = 'confetti-layer';
   document.body.appendChild(container);
