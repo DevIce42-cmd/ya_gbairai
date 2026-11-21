@@ -34,10 +34,11 @@ jobs:
 
       - name: Build Android APK (Consistent Signature & Auto VersionCode)
         working-directory: android
-        env:
-          ANDROID_VERSION_CODE: ${{ 100 + github.run_number }}
-          ANDROID_VERSION_NAME: "1.1.${{ github.run_number }}"
-        run: gradle assembleDebug --no-daemon
+        run: |
+          export ANDROID_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))
+          export ANDROID_VERSION_NAME="1.1.${GITHUB_RUN_NUMBER}"
+          echo "Building versionCode=$ANDROID_VERSION_CODE versionName=$ANDROID_VERSION_NAME"
+          gradle assembleDebug --no-daemon
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk ya-gbairai-android.apk
