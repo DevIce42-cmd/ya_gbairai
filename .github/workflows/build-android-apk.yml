@@ -24,13 +24,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Verify persistent signing keystore
+        run: keytool -list -keystore android/app/debug-shared.keystore -storepass android
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build Android APK
+      - name: Build Android APK (Consistent Signature & Auto VersionCode)
         working-directory: android
+        env:
+          ANDROID_VERSION_CODE: ${{ 100 + github.run_number }}
+          ANDROID_VERSION_NAME: "1.1.${{ github.run_number }}"
         run: gradle assembleDebug --no-daemon
 
       - name: Rename APK
@@ -49,5 +55,6 @@ jobs:
           name: "Y'A GBAIRAI ! — Application Android (APK)"
           body: |
             Téléchargez **ya-gbairai-android.apk** directement sur votre téléphone Android et installez-le en un clic !
+            *(Signé avec une clé persistante pour des mises à jour directes sans conflit de package.)*
           files: ya-gbairai-android.apk
           make_latest: true

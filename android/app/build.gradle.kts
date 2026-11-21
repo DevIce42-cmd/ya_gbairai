@@ -11,13 +11,26 @@ android {
         applicationId = "com.yagbairai.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 100
+        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.1.0"
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "debug-shared.keystore")
+            storePassword = System.getenv("ANDROID_STORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "androiddebugkey"
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: "android"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
