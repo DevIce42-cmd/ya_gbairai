@@ -556,7 +556,7 @@ export default function App() {
             {tab === 'ALL' && (
               <FigmaStudioShowcase
                 stats={meta.stats}
-                onLaunchPrototype={() => setShowIntro(true)}
+                onLaunchPrototype={() => setRouletteOpen(true)}
                 onSelectUniverse={(targetTab) => {
                   setTab(targetTab);
                   window.scrollTo({ top: 360, behavior: 'smooth' });
