@@ -11,6 +11,7 @@ import AdminPanel from './components/AdminPanel';
 import IntroOverlay from './components/IntroOverlay';
 import AuthModal from './components/AuthModal';
 import RouletteModal from './components/RouletteModal';
+import FigmaStudioShowcase from './components/FigmaStudioShowcase';
 
 const INTRO_SEEN_KEY = 'ya_gbairai_intro_seen_v3';
 const SAVED_POSTS_KEY = 'ya_gbairai_saved_posts';
@@ -550,6 +551,27 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Figma Prototype 3D, Shaders & Keyframes Studio Section */}
+            {tab === 'ALL' && (
+              <FigmaStudioShowcase
+                stats={meta.stats}
+                onLaunchPrototype={() => setShowIntro(true)}
+                onSelectUniverse={(targetTab) => {
+                  setTab(targetTab);
+                  window.scrollTo({ top: 360, behavior: 'smooth' });
+                }}
+                onOpenComposer={() =>
+                  setComposerState({
+                    open: true,
+                    type: 'CONFESSION',
+                    initialTag: '',
+                    initialHint: '',
+                    sequelSeries: null,
+                  })
+                }
+              />
+            )}
 
             {/* Daily Challenge Prompt ("Le Sujet Chaud du Jour") */}
             {tab !== 'SAVED' && (
