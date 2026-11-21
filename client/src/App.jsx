@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { api } from './api';
 import { generateAndShareStoryCard } from './utils/storyCardGenerator';
 import { getTodayPrompt, launchConfettiBurst } from './utils/dailyPrompts';
+import { initButtonFX, isSoundEnabled, playTapSound, setSoundEnabled } from './utils/buttonFX';
 import PostCard from './components/PostCard';
 import ComposerModal from './components/ComposerModal';
 import ReaderModal from './components/ReaderModal';
@@ -31,6 +32,7 @@ export default function App() {
     () => !initialSharedPost && !sessionStorage.getItem(INTRO_SEEN_KEY)
   );
   const [theme, setTheme] = useState(() => localStorage.getItem('ya_gbairai_theme') || 'dark');
+  const [sfxEnabled, setSfxEnabled] = useState(() => isSoundEnabled());
   const [user, setUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [rouletteOpen, setRouletteOpen] = useState(false);
@@ -177,6 +179,21 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('ya_gbairai_theme', theme);
   }, [theme]);
+
+  // Global tactile JavaScript button FX (ripple, micro-sparks, Web Audio pop, haptics, magnetic hover)
+  useEffect(() => initButtonFX(), []);
+
+  function toggleSfx() {
+    const next = !sfxEnabled;
+    setSfxEnabled(next);
+    setSoundEnabled(next);
+    if (next) {
+      playTapSound('cta');
+      showToast('Sons interactifs activés 🔊');
+    } else {
+      showToast('Sons des boutons coupés 🔇');
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 280);
@@ -431,6 +448,14 @@ export default function App() {
               aria-label="Rejouer l'intro"
             >
               ✨
+            </button>
+            <button
+              className="btn-icon"
+              onClick={toggleSfx}
+              title={sfxEnabled ? 'Couper les sons des boutons' : 'Activer les sons des boutons'}
+              aria-label={sfxEnabled ? 'Couper les sons des boutons' : 'Activer les sons des boutons'}
+            >
+              {sfxEnabled ? '🔊' : '🔇'}
             </button>
             <button
               className="btn-icon"
