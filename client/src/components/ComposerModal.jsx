@@ -4,6 +4,8 @@ import { api } from '../api';
 export default function ComposerModal({
   open,
   defaultType = 'CONFESSION',
+  initialTag = '',
+  initialHint = '',
   sequelSeries = null,
   suggestedTags = [],
   onClose,
@@ -32,7 +34,7 @@ export default function ComposerModal({
     setTitle(sequelSeries ? `${sequelSeries.title} — Partie ${sequelSeries.nextPart}` : '');
     setContent('');
     setPlotTwist('');
-    setSelectedTags([]);
+    setSelectedTags(initialTag ? [initialTag] : []);
     setCustomTag('');
     setPollEnabled(false);
     setPollQuestion('Verdict de la famille ?');
@@ -41,7 +43,7 @@ export default function ComposerModal({
     if (!sequelSeries) {
       api.getAlias().then(setAuthorAlias).catch(() => setAuthorAlias('GarbaFurtif225'));
     }
-  }, [open, defaultType, sequelSeries]);
+  }, [open, defaultType, initialTag, sequelSeries]);
 
   if (!open) return null;
 
@@ -173,9 +175,10 @@ export default function ComposerModal({
               required={isStory}
               maxLength={120}
               placeholder={
-                isStory
+                initialHint ||
+                (isStory
                   ? "Ex: Le jour où mon gbaka m'a déposé au mariage d'un inconnu…"
-                  : 'Ex: La honte que j’ai prise devant mon boss…'
+                  : 'Ex: La honte que j’ai prise devant mon boss…')
               }
             />
           </div>

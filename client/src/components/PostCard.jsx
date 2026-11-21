@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { REACTIONS, formatRelativeTime, formatReadingTime, getAvatarBg } from '../utils';
+import { shareOnWhatsApp } from '../utils/dailyPrompts';
 
 export default function PostCard({
   post,
@@ -82,6 +83,9 @@ export default function PostCard({
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => onShareCard(post)} title="Carte Story 9:16 (WhatsApp/TikTok)">
             📸
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => shareOnWhatsApp(post)} title="Partager sur WhatsApp">
+            💬
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => onCopyLink(post.id)} title="Copier le lien direct">
             🔗

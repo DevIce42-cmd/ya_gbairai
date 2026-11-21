@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { REACTIONS, formatRelativeTime, formatReadingTime, getAvatarBg } from '../utils';
+import { shareOnWhatsApp } from '../utils/dailyPrompts';
 
 export default function ReaderModal({
   postId,
@@ -20,6 +21,7 @@ export default function ReaderModal({
   const [progress, setProgress] = useState(0);
   const [twistOpen, setTwistOpen] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [fontScale, setFontScale] = useState(1);
   const [commentText, setCommentText] = useState('');
   const [commentAlias, setCommentAlias] = useState('');
   const [replyTo, setReplyTo] = useState(null); // { id, authorAlias }
@@ -215,7 +217,7 @@ export default function ReaderModal({
             <div className="skeleton" />
           ) : (
             <>
-              {/* Action toolbar: Audio TTS + Story Card + Link */}
+              {/* Action toolbar: Audio TTS + Story Card + WhatsApp + Link + Font Size */}
               <div className="reader-toolbar">
                 <button
                   type="button"
@@ -227,9 +229,30 @@ export default function ReaderModal({
                 <button type="button" className="btn btn-outline btn-sm" onClick={() => onShareCard(post)}>
                   📸 Carte Story 9:16
                 </button>
-                <button type="button" className="btn btn-outline btn-sm" onClick={() => onCopyLink(post.id)}>
-                  🔗 Copier le lien
+                <button type="button" className="btn btn-whatsapp btn-sm" onClick={() => shareOnWhatsApp(post)}>
+                  💬 WhatsApp
                 </button>
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => onCopyLink(post.id)}>
+                  🔗 Lien
+                </button>
+                <div className="font-size-group">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setFontScale((s) => Math.max(0.85, Number((s - 0.1).toFixed(2))))}
+                    title="Réduire le texte"
+                  >
+                    A-
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setFontScale((s) => Math.min(1.4, Number((s + 0.1).toFixed(2))))}
+                    title="Agrandir le texte"
+                  >
+                    A+
+                  </button>
+                </div>
               </div>
 
               {isStory && post.seriesId && (
@@ -278,7 +301,9 @@ export default function ReaderModal({
 
               {post.title && <h2 className="reader-title">{post.title}</h2>}
 
-              <div className="reader-content">{post.content}</div>
+              <div className="reader-content" style={{ fontSize: `${(1.04 * fontScale).toFixed(2)}rem` }}>
+                {post.content}
+              </div>
 
               {post.plotTwist && (
                 <div

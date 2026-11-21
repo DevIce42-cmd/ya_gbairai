@@ -1861,3 +1861,201 @@ button, input, textarea, select {
   transform: perspective(800px) rotateY(90deg) scale(0.92);
   opacity: 0.4;
 }
+
+/* =========================================================
+   V4 LUXURY POLISH: SCROLL BAR, MARQUEE, DAILY PROMPT, FAB,
+   WHATSAPP SHARE, CONFETTI & CUSTOM SCROLLBARS
+   ========================================================= */
+.page-scroll-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 60;
+  background: linear-gradient(90deg, var(--coral), var(--amber), var(--indigo), var(--violet));
+  transition: width 80ms linear;
+  pointer-events: none;
+}
+
+.vibe-marquee {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 9px 0;
+  white-space: nowrap;
+}
+
+.vibe-track {
+  display: inline-flex;
+  gap: 38px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  animation: marqueeScroll 28s linear infinite;
+}
+
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.daily-prompt-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 18px 22px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(125deg, var(--coral-soft), var(--indigo-soft));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.daily-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--coral);
+  color: #fff;
+}
+
+.daily-question {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.btn-whatsapp {
+  background: rgba(37, 211, 102, 0.16);
+  border: 1px solid rgba(37, 211, 102, 0.55);
+  color: #4ade80;
+}
+
+[data-theme='light'] .btn-whatsapp {
+  color: #15803d;
+}
+
+.btn-whatsapp:hover {
+  background: rgba(37, 211, 102, 0.25);
+}
+
+.font-size-group {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 1px 4px;
+  margin-left: auto;
+}
+
+/* Footer */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 26px 0 96px;
+  background: var(--bg-soft);
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Mobile Floating FAB & Back-To-Top */
+.mobile-fab {
+  display: none;
+  position: fixed;
+  right: 18px;
+  bottom: 78px;
+  z-index: 48;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--coral), var(--amber));
+  color: #fff;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 12px 30px var(--coral-glow);
+  cursor: pointer;
+  transition: transform 160ms var(--spring);
+}
+
+.mobile-fab:active {
+  transform: scale(0.92);
+}
+
+.back-top-btn {
+  position: fixed;
+  left: 18px;
+  bottom: 24px;
+  z-index: 44;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: transform 160ms var(--ease);
+}
+
+.back-top-btn:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 900px) {
+  .mobile-fab { display: grid; place-items: center; }
+  .back-top-btn { bottom: 82px; }
+}
+
+/* Confetti Celebration Burst */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 300;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 14px;
+  border-radius: 3px;
+  animation: confettiFly 1.15s var(--ease) forwards;
+}
+
+@keyframes confettiFly {
+  0% { transform: translate(0, 0) rotate(0deg) scale(0.6); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 320px)) rotate(var(--rot)) scale(1); opacity: 0; }
+}
+
+/* Custom sleek scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--coral); }

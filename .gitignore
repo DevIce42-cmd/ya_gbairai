@@ -6,3 +6,5 @@ prisma/*.db-journal
 *.log
 .DS_Store
 Thumbs.db
+promo/
+promo_capcut/

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { api } from './api';
 import { generateAndShareStoryCard } from './utils/storyCardGenerator';
+import { getTodayPrompt, launchConfettiBurst } from './utils/dailyPrompts';
 import PostCard from './components/PostCard';
 import ComposerModal from './components/ComposerModal';
 import ReaderModal from './components/ReaderModal';
@@ -65,10 +66,20 @@ export default function App() {
     reportReasons: [],
   });
 
-  const [composerState, setComposerState] = useState({ open: false, type: 'CONFESSION', sequelSeries: null });
+  const [composerState, setComposerState] = useState({
+    open: false,
+    type: 'CONFESSION',
+    initialTag: '',
+    initialHint: '',
+    sequelSeries: null,
+  });
   const [readerPostId, setReaderPostId] = useState(initialSharedPost);
   const [reportPostId, setReportPostId] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [scrollPct, setScrollPct] = useState(0);
+  const [showBackTop, setShowBackTop] = useState(false);
+
+  const todayPrompt = getTodayPrompt();
 
   const handleIntroFinish = useCallback(() => {
     sessionStorage.setItem(INTRO_SEEN_KEY, '1');
@@ -224,6 +235,17 @@ export default function App() {
   }, [loadFeed]);
 
   useEffect(() => {
+    const onScroll = () => {
+      const top = window.scrollY || 0;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollPct(max > 0 ? Math.min(100, (top / max) * 100) : 0);
+      setShowBackTop(top > 420);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setComposerState((s) => ({ ...s, open: false }));
@@ -231,11 +253,19 @@ export default function App() {
         setReportPostId(null);
         setAuthModalOpen(false);
         setRouletteOpen(false);
+      } else if (
+        (e.key === 'n' || e.key === 'N') &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) &&
+        !readerPostId &&
+        !authModalOpen &&
+        !rouletteOpen
+      ) {
+        setComposerState({ open: true, type: 'CONFESSION', initialTag: '', initialHint: '', sequelSeries: null });
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [closePost]);
+  }, [closePost, readerPostId, authModalOpen, rouletteOpen]);
 
   useEffect(() => {
     const onMove = (e) => {
@@ -338,6 +368,9 @@ export default function App() {
         <div className="orb orb-3" />
       </div>
 
+      {/* Top Page Scroll Progress Bar */}
+      <div className="page-scroll-bar" style={{ width: `${scrollPct}%` }} aria-hidden="true" />
+
       {/* Top Navigation */}
       <header className="navbar">
         <div className="container navbar-inner">
@@ -419,6 +452,24 @@ export default function App() {
         </div>
       </header>
 
+      {/* Live Community Vibe Marquee */}
+      <div className="vibe-marquee" aria-hidden="true">
+        <div className="vibe-track">
+          <span>🔥 100% EN SCRED • ZÉRO DJÊ</span>
+          <span>🎭 GBAIRAI DRÔLES SANS FILTRE</span>
+          <span>📖 STORYTIMES EN ÉPISODES</span>
+          <span>🎧 MODE AUDIO DANS LE GBAKA</span>
+          <span>📸 CARTE STORY 9:16 WHATSAPP &amp; TIKTOK</span>
+          <span>🤖 VRAIE APP ANDROID GRATUITE</span>
+          <span>🔥 100% EN SCRED • ZÉRO DJÊ</span>
+          <span>🎭 GBAIRAI DRÔLES SANS FILTRE</span>
+          <span>📖 STORYTIMES EN ÉPISODES</span>
+          <span>🎧 MODE AUDIO DANS LE GBAKA</span>
+          <span>📸 CARTE STORY 9:16 WHATSAPP &amp; TIKTOK</span>
+          <span>🤖 VRAIE APP ANDROID GRATUITE</span>
+        </div>
+      </div>
+
       <main className="container main-wrap">
         {tab === 'ADMIN' ? (
           <AdminPanel
@@ -499,6 +550,34 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Daily Challenge Prompt ("Le Sujet Chaud du Jour") */}
+            {tab !== 'SAVED' && (
+              <section className="daily-prompt-card">
+                <div className="daily-prompt-left">
+                  <div className="badges-row" style={{ marginBottom: 6 }}>
+                    <span className="daily-badge">🔥 {todayPrompt.badge}</span>
+                    <span className="mini-tag">{todayPrompt.tag}</span>
+                  </div>
+                  <p className="daily-question">{todayPrompt.question}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-coral btn-sm"
+                  onClick={() =>
+                    setComposerState({
+                      open: true,
+                      type: todayPrompt.type,
+                      initialTag: todayPrompt.tag,
+                      initialHint: todayPrompt.hint,
+                      sequelSeries: null,
+                    })
+                  }
+                >
+                  🎭 Répondre au défi
+                </button>
+              </section>
+            )}
 
             {/* Weekly Top Crown Banner */}
             {meta.weeklyTopPost && tab !== 'SAVED' && (
@@ -640,6 +719,64 @@ export default function App() {
         )}
       </main>
 
+      {/* Branded Footer */}
+      <footer className="site-footer">
+        <div className="container footer-inner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="brand-badge" style={{ width: 32, height: 32, fontSize: '0.95rem' }}>🔥</span>
+            <div>
+              <strong>Y&apos;A GBAIRAI !</strong>
+              <span className="meta-subtle" style={{ display: 'block' }}>
+                Confessions Anonymes Drôles &amp; Storytimes • 100% en scred
+              </span>
+            </div>
+          </div>
+          <div className="footer-links">
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowIntro(true)}>✨ Rejouer l&apos;intro</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setRouletteOpen(true)}>🎲 Roulette</button>
+            {!IS_ANDROID_APP && (
+              <a className="btn btn-outline btn-sm" href={ANDROID_APK_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                🤖 Télécharger .APK
+              </a>
+            )}
+          </div>
+        </div>
+      </footer>
+
+      {/* Mobile Floating Quick-Publish FAB */}
+      {tab !== 'ADMIN' && (
+        <button
+          type="button"
+          className="mobile-fab"
+          onClick={() =>
+            setComposerState({
+              open: true,
+              type: tab === 'STORYTIME' ? 'STORYTIME' : 'CONFESSION',
+              initialTag: '',
+              initialHint: '',
+              sequelSeries: null,
+            })
+          }
+          aria-label="Publier un gbairai"
+          title="Verser un gbairai (Raccourci: N)"
+        >
+          +
+        </button>
+      )}
+
+      {/* Back to top */}
+      {showBackTop && (
+        <button
+          type="button"
+          className="back-top-btn"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Remonter en haut"
+          title="Remonter en haut"
+        >
+          ↑
+        </button>
+      )}
+
       {/* Mobile Bottom Nav */}
       <nav className="mobile-bottom-nav" aria-label="Navigation mobile">
         <button className={`mobile-nav-btn ${tab === 'ALL' ? 'active' : ''}`} onClick={() => setTab('ALL')}>
@@ -668,10 +805,15 @@ export default function App() {
       <ComposerModal
         open={composerState.open}
         defaultType={composerState.type}
+        initialTag={composerState.initialTag}
+        initialHint={composerState.initialHint}
         sequelSeries={composerState.sequelSeries}
         suggestedTags={meta.suggestedTags}
-        onClose={() => setComposerState((s) => ({ ...s, open: false, sequelSeries: null }))}
+        onClose={() =>
+          setComposerState((s) => ({ ...s, open: false, initialTag: '', initialHint: '', sequelSeries: null }))
+        }
         onSuccess={(created) => {
+          launchConfettiBurst();
           loadMeta();
           loadFeed({ nextPage: 1 });
           if (composerState.sequelSeries && created?.id) {
