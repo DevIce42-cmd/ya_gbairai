@@ -4,6 +4,7 @@ import { api } from './api';
 import { generateAndShareStoryCard } from './utils/storyCardGenerator';
 import { getTodayPrompt, launchConfettiBurst } from './utils/dailyPrompts';
 import { initButtonFX, isSoundEnabled, playTapSound, setSoundEnabled } from './utils/buttonFX';
+import { initSheetSwipeToClose } from './utils/touchGestures';
 import PostCard from './components/PostCard';
 import ComposerModal from './components/ComposerModal';
 import ReaderModal from './components/ReaderModal';
@@ -209,6 +210,9 @@ export default function App() {
 
   // Global tactile JavaScript button FX (ripple, micro-sparks, Web Audio pop, haptics, magnetic hover)
   useEffect(() => initButtonFX(), []);
+
+  // Swipe-down-to-close on mobile bottom-sheet modals
+  useEffect(() => initSheetSwipeToClose(), []);
 
   function toggleSfx() {
     const next = !sfxEnabled;
@@ -466,7 +470,7 @@ export default function App() {
               </button>
             )}
             <button
-              className="btn-icon"
+              className="btn-icon nav-desktop-only"
               onClick={() => setRouletteOpen(true)}
               title="Roulette Gbangban (dossier au hasard)"
               aria-label="Roulette Gbangban"
@@ -813,6 +817,7 @@ export default function App() {
           <div className="footer-links">
             <button className="btn btn-ghost btn-sm" onClick={() => setShowIntro(true)}>✨ Rejouer l&apos;intro</button>
             <button className="btn btn-ghost btn-sm" onClick={() => setRouletteOpen(true)}>🎲 Roulette</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setTab('ADMIN'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>🛡️ Admin</button>
             {!IS_ANDROID_APP && (
               <a className="btn btn-outline btn-sm" href={ANDROID_APK_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                 🤖 Télécharger .APK
@@ -866,17 +871,29 @@ export default function App() {
           <span>🎭</span>
           <span>Gbairai</span>
         </button>
+        <button
+          type="button"
+          className="mobile-nav-compose"
+          onClick={() =>
+            setComposerState({
+              open: true,
+              type: tab === 'STORYTIME' ? 'STORYTIME' : 'CONFESSION',
+              initialTag: '',
+              initialHint: '',
+              sequelSeries: null,
+            })
+          }
+          aria-label="Verser un gbairai"
+        >
+          +
+        </button>
         <button className={`mobile-nav-btn ${tab === 'STORYTIME' ? 'active' : ''}`} onClick={() => setTab('STORYTIME')}>
           <span>📖</span>
           <span>Storytime</span>
         </button>
         <button className={`mobile-nav-btn ${tab === 'SAVED' ? 'active' : ''}`} onClick={() => setTab('SAVED')}>
           <span>⭐</span>
-          <span>Favoris</span>
-        </button>
-        <button className={`mobile-nav-btn ${tab === 'ADMIN' ? 'active' : ''}`} onClick={() => setTab('ADMIN')}>
-          <span>🛡️</span>
-          <span>Admin</span>
+          <span>Favoris{savedIds.size > 0 ? ` (${savedIds.size})` : ''}</span>
         </button>
       </nav>
 

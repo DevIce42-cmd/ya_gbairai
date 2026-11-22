@@ -2664,3 +2664,256 @@ button, input, textarea, select {
   .perm-icon { width: 34px; height: 34px; font-size: 1rem; }
   .consent-check { padding: 9px 10px; font-size: 0.76rem; margin-bottom: 4px; }
 }
+
+
+/* =========================================================
+   ERGONOMIC TOUCH UX LAYER (touch targets, press feedback,
+   thumb-zone nav, safe areas, bottom sheets, scroll rows)
+   ========================================================= */
+html { -webkit-text-size-adjust: 100%; }
+
+button, a, .btn, [role="button"], label, input[type="checkbox"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* removes 300ms tap delay & double-tap zoom on buttons */
+}
+
+/* Clear keyboard focus ring (accessibility) without showing it on touch/mouse */
+:focus { outline: none; }
+button:focus-visible,
+a:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--coral-soft);
+}
+
+button:disabled, .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: saturate(0.6);
+}
+
+/* Universal pressed state (touch devices have no hover) */
+.btn:active:not(:disabled),
+.btn-icon:active,
+.nav-pill:active,
+.sort-btn:active,
+.tag-chip:active,
+.mini-tag:active,
+.react-pill:active,
+.read-btn:active,
+.poll-opt:active,
+.part-btn:active,
+.auth-switch-btn:active {
+  transform: scale(0.96);
+  transition-duration: 80ms;
+}
+
+/* No sticky "hover lift" after a tap on phones */
+@media (hover: none) {
+  .btn:hover,
+  .btn-icon:hover,
+  .btn-coral:hover,
+  .btn-indigo:hover,
+  .tag-chip:hover,
+  .react-pill:hover,
+  .stat-box:hover,
+  .weekly-crown-card:hover,
+  .figma-module-card:hover,
+  .back-top-btn:hover {
+    transform: none;
+  }
+  .post-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-card);
+  }
+}
+
+/* Minimum 44px touch targets on touch screens (Apple HIG / Material guidelines) */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; padding: 8px 14px; }
+  .btn-lg { min-height: 50px; }
+  .btn-icon { width: 44px; height: 44px; }
+  .sort-btn, .tag-chip { min-height: 40px; padding: 8px 16px; }
+  .mini-tag { min-height: 32px; padding: 6px 12px; display: inline-flex; align-items: center; }
+  .react-row { gap: 8px; }
+  .react-pill { min-height: 42px; min-width: 54px; padding: 8px 12px; justify-content: center; font-size: 0.92rem; }
+  .read-btn { min-height: 42px; padding: 8px 16px; }
+  .poll-opt { min-height: 46px; }
+  .part-btn { min-height: 38px; padding: 7px 14px; }
+  .comment-action-btn { min-height: 36px; padding: 6px 10px; }
+  .twist-toggle { min-height: 34px; padding: 6px 12px; }
+  .auth-switch-btn { min-height: 42px; }
+  .intro-dot { width: 12px; height: 12px; }
+  .intro-dot.active { width: 32px; }
+  .consent-check input { width: 22px; height: 22px; }
+  /* 16px inputs = no auto-zoom when focusing a field on mobile */
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .search-wrap input {
+    font-size: 16px;
+    min-height: 46px;
+  }
+}
+
+/* ---------- Thumb-zone mobile bottom nav with central "+" ---------- */
+.mobile-nav-compose { display: none; }
+
+@media (max-width: 900px) {
+  .mobile-fab { display: none !important; }
+
+  .mobile-bottom-nav {
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    min-height: 52px;
+    justify-content: center;
+    border-radius: 14px;
+    gap: 3px;
+    font-size: 0.68rem;
+    transition: color 160ms var(--ease), background 160ms var(--ease);
+  }
+
+  .mobile-nav-btn span:first-child {
+    font-size: 1.28rem;
+    line-height: 1;
+    transition: transform 220ms var(--spring);
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--coral);
+    background: var(--coral-soft);
+  }
+
+  .mobile-nav-btn.active span:first-child {
+    transform: translateY(-2px) scale(1.12);
+  }
+
+  .mobile-nav-btn:active { transform: scale(0.94); }
+
+  .mobile-nav-compose {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 60px;
+    height: 60px;
+    margin: -28px 4px 0;
+    border-radius: 50%;
+    border: 4px solid var(--bg);
+    background: linear-gradient(135deg, #25d366, #00a884);
+    color: #06130b;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 10px 26px var(--coral-glow);
+    cursor: pointer;
+    transition: transform 160ms var(--spring);
+  }
+
+  .mobile-nav-compose:active { transform: scale(0.9); }
+
+  .main-wrap { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .site-footer { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .back-top-btn { left: 14px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .toast-stack { top: calc(74px + env(safe-area-inset-top, 0px)); }
+
+  /* Search full-width, sort & tags as one swipeable row instead of wrapping */
+  .controls-row { flex-direction: column; align-items: stretch; }
+  .search-wrap { max-width: none; }
+
+  .sort-group,
+  .tags-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -18px;
+    margin-right: -18px;
+    padding: 2px 18px 6px;
+  }
+
+  .sort-group::-webkit-scrollbar,
+  .tags-bar::-webkit-scrollbar { display: none; }
+
+  .sort-btn,
+  .tag-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  /* Big, evenly sized hero actions that are easy to hit with a thumb */
+  .hero-cta .btn { flex: 1 1 calc(50% - 6px); }
+  .hero-cta .btn:first-child { flex-basis: 100%; }
+
+  .card-foot { gap: 10px; }
+}
+
+/* ---------- Mobile bottom-sheet modals (close button within thumb reach) ---------- */
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .container { padding: 0 14px; }
+
+  .sort-group,
+  .tags-bar {
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .nav-actions .btn-icon { width: 40px; height: 40px; }
+
+  .modal-backdrop:not(.onboarding-backdrop) {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-backdrop:not(.onboarding-backdrop) .modal-card {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    animation: sheetUp 300ms var(--ease);
+  }
+
+  /* Drag handle */
+  .modal-backdrop:not(.onboarding-backdrop) .modal-card::before {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    width: 44px;
+    height: 5px;
+    margin: 9px auto 0;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+
+  .modal-header {
+    padding: 10px 16px 12px;
+    touch-action: none;
+  }
+
+  .modal-header h2 { font-size: 1.04rem; }
+  .modal-body { padding: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop .modal-card { animation: none !important; }
+  .mobile-nav-btn span:first-child { transition: none; }
+}
