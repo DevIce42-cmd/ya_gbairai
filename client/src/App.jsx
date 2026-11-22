@@ -349,28 +349,10 @@ export default function App() {
     return () => window.removeEventListener('pointermove', onMove);
   }, []);
 
+  // Always keep hero & feed cards immediately visible and interactive (CSS handles smooth reveal)
   useEffect(() => {
-    if (showIntro || tab === 'ADMIN' || !heroRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.hero-anim',
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out', clearProps: 'transform,opacity' }
-      );
-    }, heroRef);
-    return () => ctx.revert();
-  }, [showIntro, tab]);
-
-  useEffect(() => {
-    if (loading || !feedRef.current) return;
-    const cards = feedRef.current.querySelectorAll('.post-card');
-    if (!cards.length) return;
-    gsap.fromTo(
-      cards,
-      { opacity: 0, y: 28, scale: 0.97 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.055, ease: 'power3.out', clearProps: 'transform,opacity' }
-    );
-  }, [posts, loading, tab]);
+    document.body.style.overflow = showIntro ? 'hidden' : '';
+  }, [showIntro]);
 
   async function handleReact(postId, type) {
     try {

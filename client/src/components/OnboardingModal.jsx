@@ -63,12 +63,18 @@ export default function OnboardingModal({
         // fallback below
       }
     }
-    if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (typeof window !== 'undefined' && 'Notification' in window && typeof window.Notification.requestPermission === 'function') {
       try {
-        const result = await window.Notification.requestPermission();
-        setNotifStatus(result);
-        if (result === 'granted') {
-          onToast('Notifications activées ! 🔔');
+        // Guard against Android WebViews where Notification.requestPermission() never resolves
+        const result = await Promise.race([
+          Promise.resolve(window.Notification.requestPermission()),
+          new Promise((resolve) => setTimeout(() => resolve('timeout'), 1000)),
+        ]);
+        if (result !== 'timeout') {
+          setNotifStatus(result);
+          if (result === 'granted') {
+            onToast('Notifications activées ! 🔔');
+          }
         }
       } catch {
         setNotifStatus('unsupported');
@@ -76,21 +82,21 @@ export default function OnboardingModal({
     }
   }
 
-  async function handleAcceptPermissions() {
+  function handleAcceptPermissions() {
     if (!termsAccepted) {
       setErrorMsg('Coche la charte 100% anonyme pour continuer.');
       return;
     }
     setErrorMsg('');
 
-    // Persist audio & permission choices
+    // Persist audio & permission choices immediately
     setSoundEnabled(audioPerm);
     if (onSoundChange) onSoundChange(audioPerm);
     if (audioPerm) playTapSound('cta');
 
-    // Ask notification permission cleanly if still prompt/default
+    // Trigger notification prompt in background — NEVER block advancing to Step 2!
     if (notifStatus === 'prompt' || notifStatus === 'default') {
-      await requestNotificationPermission();
+      requestNotificationPermission();
     }
 
     try {
@@ -107,7 +113,6 @@ export default function OnboardingModal({
       // ignore storage errors
     }
 
-    // If user is already logged in, finish onboarding right away
     if (user) {
       onComplete();
       return;

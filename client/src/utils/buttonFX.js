@@ -132,20 +132,16 @@ function createRipple(button, clientX, clientY) {
   const rect = button.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
 
-  // Ensure button establishes a positioning context without breaking fixed/absolute buttons
-  const computedPos = window.getComputedStyle(button).position;
-  if (computedPos === 'static') {
-    button.style.position = 'relative';
-  }
-
-  // Dedicated inner clip host so pop-out elements (e.g. .emoji-burst) are never clipped
-  let clip = button.querySelector(':scope > .fx-ripple-clip');
-  if (!clip) {
-    clip = document.createElement('span');
-    clip.className = 'fx-ripple-clip';
-    clip.setAttribute('aria-hidden', 'true');
-    button.appendChild(clip);
-  }
+  // Render ripple on document.body (never mutate React-managed button children!)
+  const computed = window.getComputedStyle(button);
+  const clip = document.createElement('div');
+  clip.className = 'fx-ripple-portal';
+  clip.setAttribute('aria-hidden', 'true');
+  clip.style.left = `${rect.left}px`;
+  clip.style.top = `${rect.top}px`;
+  clip.style.width = `${rect.width}px`;
+  clip.style.height = `${rect.height}px`;
+  clip.style.borderRadius = computed.borderRadius || '12px';
 
   const size = Math.max(rect.width, rect.height) * 2.15;
   const x = clientX ? clientX - rect.left : rect.width / 2;
@@ -163,8 +159,11 @@ function createRipple(button, clientX, clientY) {
   wave.style.top = `${y - size / 2}px`;
 
   clip.appendChild(wave);
-  wave.addEventListener('animationend', () => wave.remove(), { once: true });
-  setTimeout(() => wave.remove(), 650);
+  document.body.appendChild(clip);
+
+  const cleanup = () => clip.remove();
+  wave.addEventListener('animationend', cleanup, { once: true });
+  setTimeout(cleanup, 620);
 }
 
 function spawnButtonSparks(x, y, count = 8) {

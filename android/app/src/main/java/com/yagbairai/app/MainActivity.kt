@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Message
+import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -108,6 +110,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView = WebView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
             setBackgroundColor(Color.parseColor("#0B141A"))
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -115,10 +121,14 @@ class MainActivity : AppCompatActivity() {
             settings.allowFileAccess = true
             settings.setSupportMultipleWindows(true)
             settings.javaScriptCanOpenWindowsAutomatically = true
-            settings.cacheMode = WebSettings.LOAD_DEFAULT
+            settings.cacheMode = WebSettings.LOAD_NO_CACHE
             settings.mediaPlaybackRequiresUserGesture = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            settings.userAgentString = "${settings.userAgentString} YaGbairaiAndroid/1.1"
+            settings.userAgentString = "${settings.userAgentString} YaGbairaiAndroid/1.2"
+
+            CookieManager.getInstance().setAcceptCookie(true)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            clearCache(true)
 
             addJavascriptInterface(NativeBridge(), "YaGbairaiNative")
 

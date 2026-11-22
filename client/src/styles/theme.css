@@ -2375,13 +2375,11 @@ button, input, textarea, select {
 /* =========================================================
    GLOBAL BUTTON JS INTERACTIVITY FX (RIPPLE, SPARKS, SPRING, MAGNETIC)
    ========================================================= */
-.fx-ripple-clip {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
+.fx-ripple-portal {
+  position: fixed;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
+  z-index: 9998;
 }
 
 .fx-ripple-wave {

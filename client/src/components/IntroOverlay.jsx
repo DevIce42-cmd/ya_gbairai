@@ -65,19 +65,33 @@ export default function IntroOverlay({ visible, onFinish }) {
       activeTlRef.current = null;
     }
 
+    document.body.style.overflow = '';
+
     if (!stageRef.current) {
       onFinish();
       return;
     }
 
+    let finished = false;
+    const finishOnce = () => {
+      if (finished) return;
+      finished = true;
+      onFinish();
+    };
+
+    // Never block touches during exit animation + guarantee unmount via failsafe timer
+    stageRef.current.style.pointerEvents = 'none';
+    const failsafe = setTimeout(finishOnce, 720);
+
     gsap.killTweensOf(stageRef.current);
     gsap.to(stageRef.current, {
       yPercent: -100,
       opacity: 0.92,
-      duration: 0.65,
+      duration: 0.55,
       ease: 'power3.inOut',
       onComplete: () => {
-        onFinish();
+        clearTimeout(failsafe);
+        finishOnce();
       },
     });
   }, [clearAllTimers, onFinish]);
@@ -257,7 +271,7 @@ export default function IntroOverlay({ visible, onFinish }) {
         activeTlRef.current.kill();
         activeTlRef.current = null;
       }
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = '';
       window.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKeyDown);
     };
