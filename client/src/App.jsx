@@ -492,7 +492,7 @@ export default function App() {
               🎲
             </button>
             <button
-              className="btn-icon"
+              className="btn-icon nav-desktop-only"
               onClick={() => setShowIntro(true)}
               title="Rejouer l'animation d'entrée"
               aria-label="Rejouer l'intro"
@@ -515,11 +515,11 @@ export default function App() {
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <button className="btn btn-outline btn-sm" onClick={() => setAuthModalOpen(true)}>
+            <button className="btn btn-outline btn-sm nav-auth-btn" onClick={() => setAuthModalOpen(true)}>
               {user ? `👤 ${user.username}` : 'Connexion'}
             </button>
             <button
-              className="btn btn-coral btn-sm"
+              className="btn btn-coral btn-sm nav-desktop-only"
               onClick={() => setComposerState({ open: true, type: tab === 'STORYTIME' ? 'STORYTIME' : 'CONFESSION', sequelSeries: null })}
             >
               + Verser

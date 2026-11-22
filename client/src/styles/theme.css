@@ -299,6 +299,7 @@ button, input, textarea, select {
   border-radius: var(--radius-pill);
   font-size: 0.85rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   backdrop-filter: blur(10px);
   transition: transform 160ms var(--ease), background 160ms var(--ease), border-color 160ms var(--ease);
@@ -1357,14 +1358,29 @@ button, input, textarea, select {
 
 @media (max-width: 900px) {
   .nav-pills { display: none; }
+  .nav-desktop-only { display: none !important; }
   .mobile-bottom-nav { display: flex; }
   .hero { grid-template-columns: 1fr; padding: 22px; }
   .feed-grid { grid-template-columns: 1fr; }
-  .toast-stack { bottom: 78px; }
+  .toast-stack {
+    top: 76px;
+    bottom: auto;
+    left: 14px;
+    right: 14px;
+    align-items: center;
+  }
 }
 
 @media (max-width: 600px) {
   .mode-grid { grid-template-columns: 1fr; }
+  .navbar-inner { height: 64px; gap: 8px; }
+  .brand { gap: 8px; min-width: 0; }
+  .brand-badge { width: 34px; height: 34px; font-size: 1rem; border-radius: 10px; flex-shrink: 0; }
+  .brand-title { font-size: 0.94rem; white-space: nowrap; }
+  .brand-sub { display: none; }
+  .nav-actions { gap: 5px; flex-shrink: 0; }
+  .nav-actions .btn-icon { width: 34px; height: 34px; font-size: 0.92rem; }
+  .nav-auth-btn { padding: 6px 11px; font-size: 0.76rem; white-space: nowrap; max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* =========================================================
@@ -2629,4 +2645,24 @@ button, input, textarea, select {
   justify-content: space-between;
   gap: 8px;
   margin-top: 4px;
+}
+
+.onboarding-footer {
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-solid);
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .onboarding-top { padding: 14px 16px 12px; }
+  .onboarding-card .modal-body { padding: 14px 16px; }
+  .onboarding-footer { padding: 12px 16px 14px; }
+  .onboarding-app-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .onboarding-brand h2 { font-size: 1.04rem; }
+  .onboarding-lead { font-size: 0.82rem; margin-bottom: 12px; }
+  .perm-list { gap: 8px; margin-bottom: 12px; }
+  .perm-row { padding: 9px 10px; gap: 9px; }
+  .perm-icon { width: 34px; height: 34px; font-size: 1rem; }
+  .consent-check { padding: 9px 10px; font-size: 0.76rem; margin-bottom: 4px; }
 }

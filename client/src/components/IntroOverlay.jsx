@@ -82,41 +82,43 @@ export default function IntroOverlay({ visible, onFinish }) {
     });
   }, [clearAllTimers, onFinish]);
 
-  const animateSceneContent = useCallback((index, dFactor = 1, delay = 0.14) => {
+  const animateSceneContent = useCallback((index, dFactor = 1, delay = 0) => {
     const contentEl = contentRefs.current[index];
     const chars = headingRefs.current[index]?.querySelectorAll('.split-char');
     const tl = gsap.timeline();
 
     if (contentEl) {
       const items = contentEl.querySelectorAll('.intro-anim-item');
+      gsap.killTweensOf(items);
       tl.fromTo(
         items,
-        { autoAlpha: 0, y: 20 * dFactor },
+        { opacity: 0.25, y: 14 * dFactor },
         {
-          autoAlpha: 1,
+          opacity: 1,
           y: 0,
-          duration: 0.52,
-          stagger: 0.07,
-          ease: 'power3.out',
-          overwrite: 'auto',
+          duration: 0.4,
+          stagger: 0.05,
+          ease: 'power2.out',
+          clearProps: 'opacity,transform',
         },
         delay
       );
     }
 
     if (chars?.length) {
+      gsap.killTweensOf(chars);
       tl.fromTo(
         chars,
-        { autoAlpha: 0, yPercent: 65 * dFactor },
+        { opacity: 0.2, yPercent: 45 * dFactor },
         {
-          autoAlpha: 1,
+          opacity: 1,
           yPercent: 0,
-          duration: 0.55,
-          ease: 'power3.out',
-          stagger: { each: 0.024, from: 'start' },
-          overwrite: 'auto',
+          duration: 0.42,
+          ease: 'power2.out',
+          stagger: { each: 0.018, from: 'start' },
+          clearProps: 'opacity,transform',
         },
-        delay + 0.04
+        delay
       );
     }
 

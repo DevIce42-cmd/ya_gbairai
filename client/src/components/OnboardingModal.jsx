@@ -152,7 +152,7 @@ export default function OnboardingModal({
               <span className="onboarding-step-pill">
                 {step === 1 ? 'ÉTAPE 1 / 2 • PERMISSIONS' : 'ÉTAPE 2 / 2 • TON COMPTE'}
               </span>
-              <h2>Bienvenue sur Y&apos;A GBAIRAI !</h2>
+              <h2>Bienvenue sur Y&apos;A GBAIRAI&nbsp;!</h2>
             </div>
           </div>
 
@@ -235,15 +235,6 @@ export default function OnboardingModal({
               </label>
 
               {errorMsg && <p className="onboarding-error">{errorMsg}</p>}
-
-              <button
-                type="button"
-                className="btn btn-coral btn-lg"
-                style={{ width: '100%' }}
-                onClick={handleAcceptPermissions}
-              >
-                Accepter les permissions &amp; Continuer →
-              </button>
             </div>
           ) : (
             <div className="onboarding-step">
@@ -366,6 +357,19 @@ export default function OnboardingModal({
             </div>
           )}
         </div>
+
+        {step === 1 && (
+          <div className="onboarding-footer">
+            <button
+              type="button"
+              className="btn btn-coral btn-lg"
+              style={{ width: '100%' }}
+              onClick={handleAcceptPermissions}
+            >
+              Accepter &amp; Continuer →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
